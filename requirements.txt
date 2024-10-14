@@ -1,0 +1,6 @@
+pynput
+matplotlib
+Pillow
+plotly 
+pandas
+seaborn
