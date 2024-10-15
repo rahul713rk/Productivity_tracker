@@ -2,6 +2,14 @@
 
 **Productivity Tracker** is a Python-based application designed to help users manage their tasks efficiently and monitor their activities throughout the day. The application features a stopwatch for tracking elapsed time on tasks and a to-do list for organizing daily activities. Built using **Tkinter** for the GUI and **SQLite** for data management, this app provides a simple yet powerful tool for boosting productivity.
 
+## ScreenShots
+
+![](/home/rahul/Desktop/projects/Productivity_tracker/img/01.png)
+
+![](/home/rahul/Desktop/projects/Productivity_tracker/img/02.png)
+
+![](/home/rahul/Desktop/projects/Productivity_tracker/img/03.png)
+
 ## Features
 
 - **Stopwatch Functionality:**
@@ -26,8 +34,6 @@
   
   - Generate graphs to visualize activity trends over the past 10 days.
   - Open graphs in your default web browser for a more detailed view.
-
-
 
 ## Installation
 
@@ -56,4 +62,24 @@ pip3 install -r requirements.txt
 
 ```bash
 python3 app.py
+```
+
+## For Desktop App
+
+**Desktop shortcut** for your Python application to quickly launch it.
+
+After Cloning the repository and installing the required packages . Follow the following steps
+
+#### Make the File Executable
+
+```bash
+chmod +x ProductivityTracker.desktop
+```
+
+#### Move the Shortcut to the Application Menu
+
+If you want it to appear in your applications menu:
+
+```bash
+mv ProductivityTracker.desktop ~/.local/share/applications/
 ```
