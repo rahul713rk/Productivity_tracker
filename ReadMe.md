@@ -4,11 +4,11 @@
 
 ## ScreenShots
 
-![](/home/rahul/Desktop/projects/Productivity_tracker/img/01.png)
+![](./img/01.png)
 
-![](/home/rahul/Desktop/projects/Productivity_tracker/img/02.png)
+![](./img/02.png)
 
-![](/home/rahul/Desktop/projects/Productivity_tracker/img/03.png)
+![](./img/03.png)
 
 ## Features
 
