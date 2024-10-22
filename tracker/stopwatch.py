@@ -115,7 +115,7 @@ class Stopwatch:
         return f"{int(minutes)}m {int(seconds)}s"
     
     def get_elapsed_time(self):
-        return self.elapsed_time  # Return elapsed time in seconds
+        return self.elapsed_time  
 
 if __name__ == "__main__":
     root = tk.Tk()

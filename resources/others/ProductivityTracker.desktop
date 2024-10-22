@@ -1,8 +1,8 @@
 [Desktop Entry]
-Version=1.0
+Version=2.0
 Type=Application
 Name=Productivity Tracker
 Exec=python3 /home/rahul/Desktop/projects/Productivity_tracker/app.py
-Icon=/home/rahul/Desktop/projects/Productivity_tracker/icon.svg
+Icon=/home/rahul/Desktop/projects/Productivity_tracker/resources/others/icon.svg
 Terminal=true
 Categories=Utility;Application;

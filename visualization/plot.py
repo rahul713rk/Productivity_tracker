@@ -7,7 +7,9 @@ import tkinter as tk
 from tkinter import ttk
 
 def show_graph(parent):
-    conn = sqlite3.connect('activity_tracker.db')
+    os.makedirs('./resources/db', exist_ok=True)
+    filename = './resources/db/main.db'
+    conn = sqlite3.connect(filename)
     cursor = conn.cursor()
 
     # Update SQL query to include time
@@ -37,7 +39,7 @@ def show_graph(parent):
                                   xaxis=dict(range=[df['date'].min(), df['date'].max()]))
 
     # Save the plot as an HTML file
-    plot_file = 'activity_tracker_graph.html'
+    plot_file = 'resources/db/activity_tracker_graph.html'
     fig.write_html(plot_file)
 
     # Create a Frame for the DataFrame display
