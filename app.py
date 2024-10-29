@@ -1,13 +1,9 @@
-# app.py
-
 import tkinter as tk
 from tkinter import ttk
-from tracker.stopwatch import Stopwatch
-from tracker.activity_tracker import start_tracking
-from tracker.db_handler import save_daily_data
 from visualization.plot import show_graph
-from tracker.todo_list import TodoList
-from tracker.todo_database import TodoDatabase
+from tracker.database import Database
+from tracker.stopwatch_interface import Stopwatch_interface
+from tracker.todo_interface import Todo_interface
 
 class ProductivityTracker:
     def __init__(self):
@@ -26,25 +22,19 @@ class ProductivityTracker:
         tab_control.pack(expand=1, fill='both')
 
         # Stopwatch and To-Do List
-        self.stopwatch = Stopwatch(tab1)
-        self.todo_list = TodoList(tab1)
-        self.db = TodoDatabase()
+        self.stopwatch = Stopwatch_interface(tab1)
+        self.todo_list = Todo_interface(tab1)
+        self.db = Database()
 
         # Visualization
         show_graph(tab2)
-
-        # Start Tracking when Stopwatch runs
-        start_tracking(self.stopwatch)
-
-        # Save data and close resources when the app is closed
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def on_close(self):
         """Handle app closure gracefully."""
-        elapsed_time = self.stopwatch.get_elapsed_time()
 
         # Save data
-        self.db.save_daily_data(elapsed_time)
+        self.db.save_daily_data()
 
         # Close resources from TodoList
         self.todo_list.close_resources()

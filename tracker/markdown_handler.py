@@ -1,6 +1,5 @@
 from datetime import datetime
 import os
-# markdown_handler.py
 class MarkdownHandler:
     def __init__(self):
         os.makedirs('./resources/db', exist_ok=True)

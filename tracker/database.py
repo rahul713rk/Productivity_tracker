@@ -1,16 +1,17 @@
-# todo_database.py
 import sqlite3
 from datetime import datetime
 import os
+from .stopwatch_helper import Stopwatch_Helper
 
 
-class TodoDatabase:
+class Database:
     def __init__(self):
         os.makedirs("./resources/db", exist_ok=True)
         filename = "./resources/db/main.db"
         self.conn = sqlite3.connect(filename)
         self.cursor = self.conn.cursor()
         self.create_tables()
+        self.stopwatch_helper = Stopwatch_Helper()
 
     def create_tables(self):
         # Create categories table
@@ -151,12 +152,14 @@ class TodoDatabase:
         self.cursor.close()
         self.conn.close()
 
-    def save_daily_data(self , elapsed_time):
-        from tracker.activity_tracker import key_count, click_count
+    def save_daily_data(self):
         date = datetime.now().strftime("%Y-%m-%d")
+        time , key , click = self.stopwatch_helper.export_variables()
+
+        print(time ," : ", key ," : " , click)
 
         # Convert elapsed time from seconds to minutes
-        elapsed_time_minutes = round(elapsed_time / 60, 2)
+        elapsed_time_minutes = round(self.stopwatch_helper.elapsed_time / 60, 2)
 
         # Use INSERT OR REPLACE to update the data if the date already exists
         self.cursor.execute(
@@ -170,11 +173,11 @@ class TodoDatabase:
         """,
             (
                 date,
-                key_count,
-                click_count,
+                self.stopwatch_helper.key_count,
+                self.stopwatch_helper.click_count,
                 elapsed_time_minutes,
-                key_count,
-                click_count,
+                self.stopwatch_helper.key_count,
+                self.stopwatch_helper.click_count,
                 elapsed_time_minutes,
             ),
         )
