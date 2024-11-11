@@ -1,9 +1,18 @@
 from datetime import datetime
 import os
+from .database import Database
+
 class MarkdownHandler:
     def __init__(self):
+        self.db = Database()
         os.makedirs('./resources/db', exist_ok=True)
         self.filename = './resources/db/daily.md'
+    
+    def markdown_helper(self):
+        task = self.db.get_today_tasks()
+        stats = self.db.get_today_stats()
+        self.update_todo_list(tasks=task , stats=stats)
+        print("Markdown updated!")
         
     def update_todo_list(self, tasks , stats):
 

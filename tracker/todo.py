@@ -1,19 +1,15 @@
-# todo_interface.py
-
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
-import tkinter.font as tkfont
-from .todo_helper import TodoHelper
+from .database import Database
 
-class Todo_interface:
+class Todo:
     def __init__(self, parent):
         self.parent = parent
         self.frame = ttk.Frame(parent)
         self.frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
-        # Initialize helper
-        self.helper = TodoHelper()
-
+        # Initialize database and markdown handler
+        self.db = Database()
         # Setup styles
         self.setup_styles()
 
@@ -34,8 +30,7 @@ class Todo_interface:
         title_frame = ttk.Frame(self.frame)
         title_frame.pack(fill='x', pady=(0, 10))
 
-        title_label = ttk.Label(title_frame, text="Todo List",
-                                font=('Helvetica', 16, 'bold'))
+        title_label = ttk.Label(title_frame, text="Todo List", font=('Helvetica', 16, 'bold'))
         title_label.pack(side='left')
 
         # Input area
@@ -50,7 +45,7 @@ class Todo_interface:
         # Category selection
         self.category_var = tk.StringVar()
         self.category_combo = ttk.Combobox(input_frame, textvariable=self.category_var,
-                                           values=self.helper.get_categories(), width=15)
+                                           values=self.get_categories(), width=15)
         self.category_combo.pack(side='left', padx=5)
         self.category_combo.set('Personal')  # Default category
 
@@ -70,13 +65,11 @@ class Todo_interface:
         add_button.pack(side='left', padx=5)
 
         # Add category button
-        add_cat_button = ttk.Button(buttons_frame, text="Add Category",
-                                    command=self.add_category)
+        add_cat_button = ttk.Button(buttons_frame, text="Add Category", command=self.add_category)
         add_cat_button.pack(side='left', padx=5)
 
         # Delete task button
-        delete_button = ttk.Button(buttons_frame, text="Delete Task",
-                                   command=self.delete_task)
+        delete_button = ttk.Button(buttons_frame, text="Delete Task", command=self.delete_task)
         delete_button.pack(side='left', padx=5)
 
         # Task list
@@ -95,8 +88,7 @@ class Todo_interface:
         self.tree.column('Status', width=70)
 
         # Scrollbar
-        scrollbar = ttk.Scrollbar(self.frame, orient="vertical",
-                                   command=self.tree.yview)
+        scrollbar = ttk.Scrollbar(self.frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
 
         # Pack tree and scrollbar
@@ -108,12 +100,9 @@ class Todo_interface:
 
     def create_context_menu(self):
         self.context_menu = tk.Menu(self.frame, tearoff=0)
-        self.context_menu.add_command(label="Set Pending",
-                                       command=lambda: self.change_status("Pending"))
-        self.context_menu.add_command(label="Set Working",
-                                       command=lambda: self.change_status("Working"))
-        self.context_menu.add_command(label="Set Done",
-                                       command=lambda: self.change_status("Done"))
+        self.context_menu.add_command(label="Set Pending", command=lambda: self.change_status("Pending"))
+        self.context_menu.add_command(label="Set Working", command=lambda: self.change_status("Working"))
+        self.context_menu.add_command(label="Set Done", command=lambda: self.change_status("Done"))
 
         self.tree.bind("<Button-3>", self.show_context_menu)
 
@@ -126,7 +115,11 @@ class Todo_interface:
 
     def add_task(self):
         title = self.task_entry.get().strip()
-        if self.helper.add_task(title, self.category_var.get(), self.priority_var.get()):
+        category = self.category_var.get()
+        priority = self.priority_var.get()
+        
+        if title:
+            self.db.add_task(title, category, priority, "Pending")
             self.task_entry.delete(0, tk.END)
             self.load_tasks()
         else:
@@ -134,8 +127,9 @@ class Todo_interface:
 
     def add_category(self):
         category = simpledialog.askstring("Add Category", "Enter new category name:")
-        if category and self.helper.add_category(category):
-            self.category_combo['values'] = self.helper.get_categories()
+        if category:
+            self.db.add_category(category)
+            self.category_combo['values'] = self.get_categories()
             messagebox.showinfo("Success", "Category added successfully!")
 
     def change_status(self, new_status):
@@ -143,7 +137,7 @@ class Todo_interface:
         if selected_item:
             item_id = selected_item[0]
             task_id = self.tree.item(item_id)['values'][4]
-            self.helper.change_status(task_id, new_status)
+            self.db.update_task_status(task_id, new_status)
             self.load_tasks()
 
     def delete_task(self):
@@ -151,18 +145,20 @@ class Todo_interface:
         if selected_item and messagebox.askyesno("Confirm Delete", "Delete this task?"):
             item_id = selected_item[0]
             task_id = self.tree.item(item_id)['values'][4]
-            self.helper.delete_task(task_id)
+            self.db.delete_task(task_id)
             self.load_tasks()
 
     def load_tasks(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
-        tasks = self.helper.load_tasks()
+        tasks = self.db.get_today_tasks()
         for task in tasks:
             values = (task[1], task[2], task[3], task[4], task[0])
             self.tree.insert('', 'end', values=values, tags=(task[3],))
-        stats = self.helper.get_latest_stats()
-        self.helper.md_handler.update_todo_list(tasks, stats)
+
+
+    def get_categories(self):
+        return self.db.get_categories()
 
     def close_resources(self):
-        self.helper.close_resources()
+        self.db.close()

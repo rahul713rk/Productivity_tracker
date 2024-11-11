@@ -1,7 +1,6 @@
 import sqlite3
 from datetime import datetime
 import os
-from .stopwatch_helper import Stopwatch_Helper
 
 
 class Database:
@@ -11,7 +10,6 @@ class Database:
         self.conn = sqlite3.connect(filename)
         self.cursor = self.conn.cursor()
         self.create_tables()
-        self.stopwatch_helper = Stopwatch_Helper()
 
     def create_tables(self):
         # Create categories table
@@ -92,7 +90,7 @@ class Database:
         )
         self.conn.commit()
 
-    def get_all_tasks(self):
+    def get_today_tasks(self):
         today_date = datetime.today().strftime("%Y-%m-%d")
 
         # Execute the query with a WHERE clause for today's date
@@ -114,8 +112,28 @@ class Database:
             (today_date,),
         )
         return self.cursor.fetchall()
-    
-    def get_latest_stats(self):
+
+    def get_all_tasks(self):
+        # Execute the query with a WHERE clause for today's date
+        self.cursor.execute(
+            """
+            SELECT tasks.id, tasks.title, categories.name, tasks.priority, tasks.status, 
+           tasks.created_date, tasks.completed_date
+            FROM tasks
+            LEFT JOIN categories ON tasks.category_id = categories.id
+            WHERE DATE(tasks.created_date) = ?
+            ORDER BY 
+            CASE tasks.priority
+                WHEN 'High' THEN 1
+                WHEN 'Medium' THEN 2
+                WHEN 'Low' THEN 3
+                END,
+            tasks.created_date DESC
+            """,
+        )
+        return self.cursor.fetchall()
+
+    def get_today_stats(self):
         today_date = datetime.today().strftime("%Y-%m-%d")
 
         # Execute the query with a WHERE clause for today's date
@@ -147,19 +165,19 @@ class Database:
     def delete_task(self, task_id):
         self.cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
         self.conn.commit()
-    
+
     def close(self):
         self.cursor.close()
         self.conn.close()
 
-    def save_daily_data(self):
+    def save_daily_data(self, data):
         date = datetime.now().strftime("%Y-%m-%d")
-        time , key , click = self.stopwatch_helper.export_variables()
+        time, key_count, click_count = data
 
-        print(time ," : ", key ," : " , click)
+        print(time, " : ", key_count, " : ", click_count)
 
         # Convert elapsed time from seconds to minutes
-        elapsed_time_minutes = round(self.stopwatch_helper.elapsed_time / 60, 2)
+        elapsed_time_minutes = round(time / 60, 2)
 
         # Use INSERT OR REPLACE to update the data if the date already exists
         self.cursor.execute(
@@ -173,11 +191,11 @@ class Database:
         """,
             (
                 date,
-                self.stopwatch_helper.key_count,
-                self.stopwatch_helper.click_count,
+                key_count,
+                click_count,
                 elapsed_time_minutes,
-                self.stopwatch_helper.key_count,
-                self.stopwatch_helper.click_count,
+                key_count,
+                click_count,
                 elapsed_time_minutes,
             ),
         )

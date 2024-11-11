@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import ttk
 from visualization.plot import show_graph
 from tracker.database import Database
-from tracker.stopwatch_interface import Stopwatch_interface
-from tracker.todo_interface import Todo_interface
+from tracker.stopwatch import StopwatchApp
+from tracker.todo import Todo
+from tracker.markdown_handler import MarkdownHandler
+from tracker.activity_tracker import start_tracking , stop_tracking 
 
 class ProductivityTracker:
     def __init__(self):
@@ -22,9 +24,11 @@ class ProductivityTracker:
         tab_control.pack(expand=1, fill='both')
 
         # Stopwatch and To-Do List
-        self.stopwatch = Stopwatch_interface(tab1)
-        self.todo_list = Todo_interface(tab1)
+        self.stopwatch = StopwatchApp(tab1)
+        self.todo_list = Todo(tab1)
+        start_tracking(self.stopwatch)
         self.db = Database()
+        self.markdown = MarkdownHandler()
 
         # Visualization
         show_graph(tab2)
@@ -34,11 +38,13 @@ class ProductivityTracker:
         """Handle app closure gracefully."""
 
         # Save data
-        self.db.save_daily_data()
+        self.db.save_daily_data(data=self.stopwatch.export_vars())
+        self.markdown.markdown_helper()
 
         # Close resources from TodoList
         self.todo_list.close_resources()
-
+        stop_tracking()
+        self.db.close()
         # Destroy the main window
         self.root.destroy()
 
