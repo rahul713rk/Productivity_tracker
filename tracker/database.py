@@ -48,7 +48,7 @@ class Database:
         )
 
         # Insert default categories
-        default_categories = ["Coding", "Reading"]
+        default_categories = ["Personal","Coding", "Reading"]
         for category in default_categories:
             self.cursor.execute(
                 "INSERT OR IGNORE INTO categories (name) VALUES (?)", (category,)
@@ -164,6 +164,10 @@ class Database:
 
     def delete_task(self, task_id):
         self.cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        self.conn.commit()
+    
+    def delete_category(self , name):
+        self.cursor.execute("DELETE FROM categories WHERE name = ?" , (name,))
         self.conn.commit()
 
     def close(self):

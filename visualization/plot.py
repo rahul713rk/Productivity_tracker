@@ -125,7 +125,7 @@ def show_graph(parent):
     control_frame.pack(pady=5)
 
     # Dropdown for graph type
-    graph_type_var = tk.StringVar(value='Area')
+    graph_type_var = tk.StringVar(value='Line')
     graph_type_dropdown = ttk.Combobox(control_frame, textvariable=graph_type_var,
                                        values=['Area', 'Line', 'Bar'], state='readonly')
     graph_type_dropdown.pack(side='left', padx=5)
@@ -135,11 +135,11 @@ def show_graph(parent):
         fig = generate_plot(fetch_data_from_db(), graph_type_var.get())
         save_plot_as_html(fig)
 
-    open_button = tk.Button(control_frame, text="Open Graph in Browser", command=on_open_graph)
+    open_button = tk.Button(control_frame, text="Open Graph", command=on_open_graph)
     open_button.pack(side='left', padx=5)
 
     # Create a button to delete the HTML file
-    delete_button = tk.Button(control_frame, text="Delete Graph HTML", command=delete_html_file)
+    delete_button = tk.Button(control_frame, text="Delete HTML", command=delete_html_file)
     delete_button.pack(side='left', padx=5)
 
     # Create a button to delete the database

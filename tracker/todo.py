@@ -30,7 +30,7 @@ class Todo:
         title_frame = ttk.Frame(self.frame)
         title_frame.pack(fill='x', pady=(0, 10))
 
-        title_label = ttk.Label(title_frame, text="Todo List", font=('Helvetica', 16, 'bold'))
+        title_label = ttk.Label(title_frame, text="Todo List", font=('Helvetica', 20, 'bold'))
         title_label.pack(side='left')
 
         # Input area
@@ -54,7 +54,7 @@ class Todo:
         priority_combo = ttk.Combobox(input_frame, textvariable=self.priority_var,
                                       values=['High', 'Medium', 'Low'], width=10)
         priority_combo.pack(side='left', padx=5)
-        priority_combo.set('Medium')  # Default priority
+        priority_combo.set('Low')  # Default priority
 
         # Buttons frame
         buttons_frame = ttk.Frame(self.frame)
@@ -64,13 +64,17 @@ class Todo:
         add_button = ttk.Button(buttons_frame, text="Add Task", command=self.add_task)
         add_button.pack(side='left', padx=5)
 
+        # Delete task button
+        delete_button = ttk.Button(buttons_frame, text="Delete Task", command=self.delete_task)
+        delete_button.pack(side='left', padx=5)
+
         # Add category button
         add_cat_button = ttk.Button(buttons_frame, text="Add Category", command=self.add_category)
         add_cat_button.pack(side='left', padx=5)
 
-        # Delete task button
-        delete_button = ttk.Button(buttons_frame, text="Delete Task", command=self.delete_task)
-        delete_button.pack(side='left', padx=5)
+        # Delete category button
+        delete_cat_button = ttk.Button(buttons_frame , text="Delete Category" , command=self.delete_category)
+        delete_cat_button.pack(side='left',padx=5)
 
         # Task list
         self.tree = ttk.Treeview(self.frame, columns=('Title', 'Category', 'Priority', 'Status'),
@@ -147,6 +151,30 @@ class Todo:
             task_id = self.tree.item(item_id)['values'][4]
             self.db.delete_task(task_id)
             self.load_tasks()
+
+    def delete_category(self):
+        selected_category = self.category_var.get()
+
+        if messagebox.askyesno("Confirm Delete", f"Delete category '{selected_category}'?"):
+            self.db.delete_category(selected_category)  # Delete from the database
+            print(f"Category '{selected_category}' deleted successfully.")
+            self.refresh_categories()
+        else:
+            print('Category deletion canceled.')
+    
+
+    def refresh_categories(self):
+        """Refresh the categories in the Combobox after deletion."""
+        updated_categories = self.get_categories()
+        self.category_combo['values'] = updated_categories
+
+        # Optionally, set the Combobox to a default value
+        if "Personal" in updated_categories:
+            self.category_combo.set("Personal")
+        elif updated_categories:
+            self.category_combo.set(updated_categories[0])
+        else:
+            self.category_combo.set('')
 
     def load_tasks(self):
         for item in self.tree.get_children():

@@ -25,7 +25,13 @@ class StopwatchApp:
         self.frame = tk.Frame(self.parent)
         self.frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
+        title_frame = ttk.Frame(self.frame)
+        title_frame.pack(fill='x', pady=(0, 10))
+        title_label = ttk.Label(title_frame, text="Stopwatch", font=('Helvetica', 20, 'bold'))
+        title_label.pack(side='left')
+
         # Timer display
+        
         self.label = tk.Label(self.frame, text="00:00:00", font=("Helvetica", 48))
         self.label.pack(pady=10)
 
@@ -38,6 +44,7 @@ class StopwatchApp:
         self.stop_button.pack(side="left", padx=5)
         self.reset_button = tk.Button(self.button_frame, text="Reset", command=self.reset)
         self.reset_button.pack(side="left", padx=5)
+        self.reset_button.config(state='disabled')
         self.lap_button = tk.Button(self.button_frame, text="Lap", command=self.record_lap)
         self.lap_button.pack(side="left", padx=5)
 
@@ -48,9 +55,9 @@ class StopwatchApp:
         # Activity counters
         self.counter_frame = tk.Frame(self.frame)
         self.counter_frame.pack(pady=5)
-        self.key_count_label = tk.Label(self.counter_frame, text=f"Keys: {self.key_count}", font=("Helvetica", 14))
+        self.key_count_label = tk.Label(self.counter_frame, text=f"Keys: {self.key_count}", font=("Helvetica", 16))
         self.key_count_label.pack(side="left", padx=10)
-        self.click_count_label = tk.Label(self.counter_frame, text=f"Clicks: {self.click_count}", font=("Helvetica", 14))
+        self.click_count_label = tk.Label(self.counter_frame, text=f"Clicks: {self.click_count}", font=("Helvetica", 16))
         self.click_count_label.pack(side="left", padx=10)
 
         # Schedule updates
@@ -121,5 +128,3 @@ class StopwatchApp:
         res = [self.elapsed_time , self.key_count , self.click_count]
         # print(res)
         return res
-
-

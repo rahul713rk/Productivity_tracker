@@ -12,7 +12,8 @@ class ProductivityTracker:
         # Main Window
         self.root = tk.Tk()
         self.root.title("Productivity Tracker")
-        self.root.geometry("800x400")
+        self.root.geometry("900x700")
+        # self.root.wm_state('normal')
 
         # Tab Control
         tab_control = ttk.Notebook(self.root)
