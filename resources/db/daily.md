@@ -1,14 +1,15 @@
 # Todo List | Date : 2024-11-12 
 
-Keys : 80 | Clicks : 61 | Time (in Minutes) : 1.98## Tasks Overview
+Keys : 110 | Clicks : 91 | Time (in Minutes) : 2.9699999999999998## Tasks Overview
 
 ### Pending
 | Title | Category | Priority | Created | Completed |
 |-------|----------|----------|----------|------------|
-| hope it works | Personal | Low | 2024-11-12 19:08:28 | - |
-| testing | Personal | Low | 2024-11-12 19:08:18 | - |
-| testing | Personal | Low | 2024-11-12 19:08:12 | - |
-| hello world | Personal | Low | 2024-11-12 19:08:07 | - |
+| successful | Coding | Low | 2024-11-12 19:14:13 | - |
+| print | Coding | Low | 2024-11-12 19:14:00 | - |
+| testing | None | Low | 2024-11-12 19:08:18 | - |
+| testing | None | Low | 2024-11-12 19:08:12 | - |
+| hello world | None | Low | 2024-11-12 19:08:07 | - |
 
 ### Working
 No tasks in this status.
