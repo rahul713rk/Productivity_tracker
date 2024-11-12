@@ -5,8 +5,10 @@ from .database import Database
 class MarkdownHandler:
     def __init__(self):
         self.db = Database()
-        os.makedirs('./resources/db', exist_ok=True)
-        self.filename = './resources/db/daily.md'
+        abs_path = os.path.abspath("./resources/db/Daily_update")
+        os.makedirs(abs_path, exist_ok=True)
+        self.filename = os.path.join(abs_path, "README.md")
+        
     
     def markdown_helper(self):
         task = self.db.get_today_tasks()
@@ -17,6 +19,8 @@ class MarkdownHandler:
     def update_todo_list(self, tasks , stats):
 
         date = datetime.now().strftime('%Y-%m-%d')
+        # print(self.filename)
+        # print(os.getcwd())
         with open(self.filename, 'w', encoding='utf-8') as f:
             f.write(f"# Todo List | Date : {date} \n\n")
             if stats is not None:

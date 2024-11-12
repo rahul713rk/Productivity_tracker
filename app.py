@@ -5,7 +5,8 @@ from tracker.database import Database
 from tracker.stopwatch import StopwatchApp
 from tracker.todo import Todo
 from tracker.markdown_handler import MarkdownHandler
-from tracker.activity_tracker import start_tracking , stop_tracking 
+from tracker.activity_tracker import start_tracking , stop_tracking
+from setting.git import GitApp 
 
 class ProductivityTracker:
     def __init__(self):
@@ -19,9 +20,11 @@ class ProductivityTracker:
         tab_control = ttk.Notebook(self.root)
         tab1 = ttk.Frame(tab_control)
         tab2 = ttk.Frame(tab_control)
+        tab3 = ttk.Frame(tab_control)
 
         tab_control.add(tab1, text="Stopwatch & To-Do List")
         tab_control.add(tab2, text="Visualization")
+        tab_control.add(tab3 , text= "Accounts")
         tab_control.pack(expand=1, fill='both')
 
         # Stopwatch and To-Do List
@@ -33,6 +36,12 @@ class ProductivityTracker:
 
         # Visualization
         show_graph(tab2)
+        
+
+        # Setting
+        self.setting = GitApp(tab3)
+
+
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def on_close(self):
@@ -46,6 +55,8 @@ class ProductivityTracker:
         self.todo_list.close_resources()
         stop_tracking()
         self.db.close()
+
+        self.setting.git_handler.commit_and_push()
         # Destroy the main window
         self.root.destroy()
 

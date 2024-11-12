@@ -7,13 +7,16 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 # Global variable to store the HTML file path
-PLOT_FILE_PATH = './resources/db/activity_tracker_graph.html'
-DATABASE_PATH = './resources/db/main.db'
+PLOT_FILE = './resources/db/activity_tracker_graph.html'
+DATABASE_FILE = './resources/db/main.db'
+
+PLOT_FILE_PATH = os.path.abspath(PLOT_FILE)
+DATABASE_PATH = os.path.abspath(DATABASE_FILE)
 
 
 def fetch_data_from_db():
     """Fetch data from the SQLite database."""
-    os.makedirs('./resources/db', exist_ok=True)
+    # os.makedirs('./resources/db', exist_ok=True)
     if not os.path.exists(DATABASE_PATH):
         return pd.DataFrame(columns=['date', 'keys_pressed', 'mouse_clicks', 'time'])
     

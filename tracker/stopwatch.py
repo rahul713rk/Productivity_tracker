@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk , messagebox
 import time
 
 
@@ -44,7 +44,7 @@ class StopwatchApp:
         self.stop_button.pack(side="left", padx=5)
         self.reset_button = tk.Button(self.button_frame, text="Reset", command=self.reset)
         self.reset_button.pack(side="left", padx=5)
-        self.reset_button.config(state='disabled')
+        # self.reset_button.config(state='disabled')
         self.lap_button = tk.Button(self.button_frame, text="Lap", command=self.record_lap)
         self.lap_button.pack(side="left", padx=5)
 
@@ -77,11 +77,12 @@ class StopwatchApp:
 
     def reset(self):
         """Reset the stopwatch and clear lap times."""
-        self.running = False
-        self.elapsed_time = 0
-        self.lap_times.clear()
-        self.update_lap_display()
-        self.label.config(text="00:00:00")
+        if messagebox.askyesno("Confirmation " , 'Do you want to Reset ? '):
+            self.running = False
+            self.elapsed_time = 0
+            self.lap_times.clear()
+            self.update_lap_display()
+            self.label.config(text="00:00:00")
 
     def record_lap(self):
         """Record a lap time."""

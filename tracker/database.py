@@ -5,8 +5,11 @@ import os
 
 class Database:
     def __init__(self):
-        os.makedirs("./resources/db", exist_ok=True)
-        filename = "./resources/db/main.db"
+        
+        abs_path = os.path.abspath("./resources/db")
+        os.makedirs(abs_path, exist_ok=True)
+        filename = os.path.join(abs_path, "main.db")
+            
         self.conn = sqlite3.connect(filename)
         self.cursor = self.conn.cursor()
         self.create_tables()
