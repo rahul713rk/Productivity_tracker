@@ -1,6 +1,6 @@
 # Todo List | Date : 2024-11-12 
 
-Keys : 0 | Clicks : 2 | Time (in Minutes) : 0.3## Tasks Overview
+Keys : 0 | Clicks : 4 | Time (in Minutes) : 0.3## Tasks Overview
 
 ### Pending
 No tasks in this status.
