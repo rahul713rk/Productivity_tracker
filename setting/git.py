@@ -201,77 +201,78 @@ Thumbs.db
 
     def commit_and_push(self, commit_message=None):
         """Perform Git commit and push using Personal Access Token for authentication"""
-        try:
-            if not self.verify_git_installation():
-                return False
+        if messagebox.askyesno("Confirm" , "Do u want to commit ?"):
+            try:
+                if not self.verify_git_installation():
+                    return False
 
-            repo_path = Path(self.local_path)
-            if not repo_path.is_dir():
-                raise FileNotFoundError(f"Invalid repository path: {repo_path}")
+                repo_path = Path(self.local_path)
+                if not repo_path.is_dir():
+                    raise FileNotFoundError(f"Invalid repository path: {repo_path}")
 
-            os.chdir(repo_path)
+                os.chdir(repo_path)
 
-            # Check for changes
-            result = subprocess.run(['git', 'status', '--porcelain'], 
-                                 capture_output=True, text=True, check=True)
-            if not result.stdout.strip():
-                messagebox.showinfo("Info", "No changes to commit")
-                return True
+                # Check for changes
+                result = subprocess.run(['git', 'status', '--porcelain'], 
+                                    capture_output=True, text=True, check=True)
+                if not result.stdout.strip():
+                    messagebox.showinfo("Info", "No changes to commit")
+                    return True
 
-            # Add all changes
-            subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
+                # Add all changes
+                subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
 
-            # Get commit message
-            date = datetime.now().strftime('%Y-%m-%d')
-            # if not commit_message:
-            #     commit_message = simpledialog.askstring(
-            #         "Commit Message", 
-            #         "Enter commit message:",
-            #         initialvalue= f'{date} : Auto Commit'
-            #     )
-            #     if not commit_message:
-            #         return False
+                # Get commit message
+                date = datetime.now().strftime('%Y-%m-%d')
+                # if not commit_message:
+                #     commit_message = simpledialog.askstring(
+                #         "Commit Message", 
+                #         "Enter commit message:",
+                #         initialvalue= f'{date} : Auto Commit'
+                #     )
+                #     if not commit_message:
+                #         return False
 
-            # Commit changes
+                # Commit changes
 
-            commit_message = f'{date} : Auto Commit'
-            subprocess.run(['git', 'commit', '-m', commit_message], 
-                         check=True, capture_output=True)
+                commit_message = f'{date} : Auto Commit'
+                subprocess.run(['git', 'commit', '-m', commit_message], 
+                            check=True, capture_output=True)
 
-            # Set up environment for authentication
-            git_env = {
-                **os.environ,
-                'GIT_ASKPASS': 'echo',
-                'GIT_USERNAME': self.username,
-                'GIT_PASSWORD': self.token
-            }
+                # Set up environment for authentication
+                git_env = {
+                    **os.environ,
+                    'GIT_ASKPASS': 'echo',
+                    'GIT_USERNAME': self.username,
+                    'GIT_PASSWORD': self.token
+                }
 
-            # Push to remote using token
-            push_result = subprocess.run(
-                ['git', 'push', '-u', 'origin', 'main'],
-                env=git_env,
-                capture_output=True,
-                text=True
-            )
-
-            if push_result.returncode != 0:
-                raise subprocess.CalledProcessError(
-                    push_result.returncode,
-                    push_result.args,
-                    push_result.stdout,
-                    push_result.stderr
+                # Push to remote using token
+                push_result = subprocess.run(
+                    ['git', 'push', '-u', 'origin', 'main'],
+                    env=git_env,
+                    capture_output=True,
+                    text=True
                 )
 
-            messagebox.showinfo("Success", "Changes pushed to GitHub successfully!")
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            error_msg = e.stderr if hasattr(e, 'stderr') else str(e)
-            messagebox.showerror("Error", f"Git operation failed: {error_msg}")
-            return False
-        except Exception as e:
-            messagebox.showerror("Error", f"Unexpected error: {str(e)}")
-            return False
+                if push_result.returncode != 0:
+                    raise subprocess.CalledProcessError(
+                        push_result.returncode,
+                        push_result.args,
+                        push_result.stdout,
+                        push_result.stderr
+                    )
+
+                messagebox.showinfo("Success", "Changes pushed to GitHub successfully!")
+                return True
+                
+            except subprocess.CalledProcessError as e:
+                error_msg = e.stderr if hasattr(e, 'stderr') else str(e)
+                messagebox.showerror("Error", f"Git operation failed: {error_msg}")
+                return False
+            except Exception as e:
+                messagebox.showerror("Error", f"Unexpected error: {str(e)}")
+                return False
 
 
 class GitApp:

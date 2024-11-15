@@ -49,37 +49,23 @@ cd Productivity_tracker
 **Install required packages:** Make sure you have Python 3.x installed. You may also need to install the required packages:
 
 ```bash
-pip install -r requirements.txt
+pip install -r resources/others/requirements.txt
 ```
 
 or 
 
 ```bash
-pip3 install -r requirements.txt
+pip3 install -r resources/others/requirements.txt
 ```
 
-**Run the application:**
+**Run the application: (Optional , this will not install the app)**
 
 ```bash
 python3 app.py
 ```
 
-## For Desktop App
-
-**Desktop shortcut** for your Python application to quickly launch it.
-
-After Cloning the repository and installing the required packages . Follow the following steps
-
-#### Make the File Executable
+**To install the application:**
 
 ```bash
-chmod +x ProductivityTracker.desktop
-```
-
-#### Move the Shortcut to the Application Menu
-
-If you want it to appear in your applications menu:
-
-```bash
-mv ProductivityTracker.desktop ~/.local/share/applications/
+python3 main.py
 ```
