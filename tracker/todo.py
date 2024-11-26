@@ -76,31 +76,51 @@ class Todo:
         delete_cat_button = ttk.Button(buttons_frame , text="Delete Category" , command=self.delete_category)
         delete_cat_button.pack(side='left',padx=5)
 
-        # Task list
-        self.tree = ttk.Treeview(self.frame, columns=('Title', 'Category', 'Priority', 'Status'),
-                                 show='headings', height=15)
+        # Task Frame
+        main_task_frame = ttk.Frame(self.frame)
+        main_task_frame.pack(fill='both' , expand=True)
 
-        # Configure columns
-        self.tree.heading('Title', text='Title')
-        self.tree.heading('Category', text='Category')
-        self.tree.heading('Priority', text='Priority')
-        self.tree.heading('Status', text='Status')
+        done_task_frame = ttk.Frame(self.frame)
+        done_task_frame.pack(fill='both' , expand=True)
 
-        self.tree.column('Title', width=200)
-        self.tree.column('Category', width=100)
-        self.tree.column('Priority', width=70)
-        self.tree.column('Status', width=70)
+        # Task Tables
+        self.main_tree = self.create_tree_table(main_task_frame ,"Task List", height=12)
+        self.main_tree.pack(fill='both', expand=True, padx=5, pady=5)
 
-        # Scrollbar
-        scrollbar = ttk.Scrollbar(self.frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
-
-        # Pack tree and scrollbar
-        self.tree.pack(side='left', fill='both', expand=True)
-        scrollbar.pack(side='right', fill='y')
+        self.done_tree = self.create_tree_table(done_task_frame ,"Task Completed", height=4)
+        self.done_tree.pack(fill='both', expand=True, padx=5, pady=5)
 
         # Right-click menu for status change
         self.create_context_menu()
+    
+    def create_tree_table(self , frame , title = 'None' ,  height = 15):
+        title_label = ttk.Label(frame, text=title, font=('Helvetica', 15, 'bold'))
+        title_label.pack(side='top' , padx=5 , pady=5)
+
+        tree = ttk.Treeview(frame, columns=('Title', 'Category', 'Priority', 'Status'),
+                                 show='headings', height=height)
+
+        # Configure columns
+        tree.heading('Title', text='Title')
+        tree.heading('Category', text='Category')
+        tree.heading('Priority', text='Priority')
+        tree.heading('Status', text='Status')
+
+        tree.column('Title', width=200)
+        tree.column('Category', width=100)
+        tree.column('Priority', width=70)
+        tree.column('Status', width=70)
+
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+
+        # Pack tree and scrollbar
+        tree.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+
+        return tree
+
 
     def create_context_menu(self):
         self.context_menu = tk.Menu(self.frame, tearoff=0)
@@ -108,14 +128,17 @@ class Todo:
         self.context_menu.add_command(label="Set Working", command=lambda: self.change_status("Working"))
         self.context_menu.add_command(label="Set Done", command=lambda: self.change_status("Done"))
 
-        self.tree.bind("<Button-3>", self.show_context_menu)
+        # Bind context menu to both trees
+        self.main_tree.bind("<Button-3>", lambda e: self.show_context_menu(e, self.main_tree))
+        self.done_tree.bind("<Button-3>", lambda e: self.show_context_menu(e, self.done_tree))
 
-    def show_context_menu(self, event):
+    def show_context_menu(self, event, tree):
         try:
-            self.tree.selection_set(self.tree.identify_row(event.y))
+            tree.selection_set(tree.identify_row(event.y))
             self.context_menu.tk_popup(event.x_root, event.y_root)
         finally:
             self.context_menu.grab_release()
+
 
     def add_task(self):
         title = self.task_entry.get().strip()
@@ -137,20 +160,33 @@ class Todo:
             messagebox.showinfo("Success", "Category added successfully!")
 
     def change_status(self, new_status):
-        selected_item = self.tree.selection()
+        # Determine which tree is currently selected
+        selected_tree = self.main_tree if self.main_tree.selection() else self.done_tree
+        selected_item = selected_tree.selection()
+
         if selected_item:
             item_id = selected_item[0]
-            task_id = self.tree.item(item_id)['values'][4]
-            self.db.update_task_status(task_id, new_status)
-            self.load_tasks()
+            task_id = selected_tree.item(item_id)['values'][4]  # Fetch hidden ID
+            current_status = selected_tree.item(item_id)['values'][3]  # Current Status
+
+            # Only update if there's an actual status change
+            if current_status != new_status:
+                self.db.update_task_status(task_id, new_status)
+                self.load_tasks()  # Refresh the display
+
 
     def delete_task(self):
-        selected_item = self.tree.selection()
-        if selected_item and messagebox.askyesno("Confirm Delete", "Delete this task?"):
+        selected_tree = self.main_tree if self.main_tree.selection() else self.done_tree
+        selected_item = selected_tree.selection()
+
+        if selected_item:
             item_id = selected_item[0]
-            task_id = self.tree.item(item_id)['values'][4]
-            self.db.delete_task(task_id)
-            self.load_tasks()
+            task_id = selected_tree.item(item_id)['values'][4]  # Fetch hidden ID
+
+            if messagebox.askyesno("Confirm Delete", "Delete this task?"):
+                self.db.delete_task(task_id)
+                self.load_tasks()  # Refresh lists after deletion
+
 
     def delete_category(self):
         selected_category = self.category_var.get()
@@ -177,12 +213,22 @@ class Todo:
             self.category_combo.set('')
 
     def load_tasks(self):
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+        # Clear both trees
+        for tree in [self.main_tree, self.done_tree]:
+            for item in tree.get_children():
+                tree.delete(item)
+
+        # Fetch tasks from the database
         tasks = self.db.get_today_tasks()
+        
+        # Separate tasks based on their status
         for task in tasks:
-            values = (task[1], task[2], task[3], task[4], task[0])
-            self.tree.insert('', 'end', values=values, tags=(task[3],))
+            values = (task[1], task[2], task[3], task[4], task[0])  # Title, Category, Priority, Status, ID
+            if task[4] == 'Done':
+                self.done_tree.insert('', 'end', values=values, tags=(task[3],))
+            else:
+                self.main_tree.insert('', 'end', values=values, tags=(task[3],))
+
 
 
     def get_categories(self):

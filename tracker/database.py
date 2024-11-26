@@ -33,8 +33,8 @@ class Database:
             category_id INTEGER,
             priority TEXT NOT NULL,
             status TEXT NOT NULL,
-            created_date TEXT NOT NULL,
-            completed_date TEXT,
+            created_date DATETIME NOT NULL,
+            completed_date DATETIME,
             FOREIGN KEY (category_id) REFERENCES categories (id)
         )"""
         )
@@ -42,7 +42,7 @@ class Database:
         self.cursor.execute(
             """
         CREATE TABLE IF NOT EXISTS activity (
-            date TEXT PRIMARY KEY, 
+            date DATETIME PRIMARY KEY, 
             keys_pressed INTEGER DEFAULT 0, 
             mouse_clicks INTEGER DEFAULT 0,
             time REAL DEFAULT 0  -- Column for total time elapsed in minutes
@@ -60,7 +60,7 @@ class Database:
         self.conn.commit()
 
     def add_task(self, title, category, priority, status):
-        created_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        created_date = datetime.now().date()
 
         # Get category_id
         self.cursor.execute("SELECT id FROM categories WHERE name = ?", (category,))
@@ -79,7 +79,7 @@ class Database:
 
     def update_task_status(self, task_id, new_status):
         completed_date = (
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            datetime.now().date()
             if new_status == "Done"
             else None
         )
@@ -94,7 +94,7 @@ class Database:
         self.conn.commit()
 
     def get_today_tasks(self):
-        today_date = datetime.today().strftime("%Y-%m-%d")
+        today_date = datetime.today().date()
 
         # Execute the query with a WHERE clause for today's date
         self.cursor.execute(
@@ -124,7 +124,6 @@ class Database:
            tasks.created_date, tasks.completed_date
             FROM tasks
             LEFT JOIN categories ON tasks.category_id = categories.id
-            WHERE DATE(tasks.created_date) = ?
             ORDER BY 
             CASE tasks.priority
                 WHEN 'High' THEN 1
@@ -132,14 +131,13 @@ class Database:
                 WHEN 'Low' THEN 3
                 END,
             tasks.created_date DESC
-            """,
+            """
         )
         return self.cursor.fetchall()
 
     def get_today_stats(self):
-        today_date = datetime.today().strftime("%Y-%m-%d")
+        today_date = datetime.today().date()
 
-        # Execute the query with a WHERE clause for today's date
         self.cursor.execute(
             """
                 SELECT keys_pressed , mouse_clicks , time 
@@ -178,7 +176,7 @@ class Database:
         self.conn.close()
 
     def save_daily_data(self, data):
-        date = datetime.now().strftime("%Y-%m-%d")
+        date = datetime.now().date()
         time, key_count, click_count = data
 
         print(time, " : ", key_count, " : ", click_count)

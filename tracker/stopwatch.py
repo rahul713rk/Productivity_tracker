@@ -5,8 +5,8 @@ import time
 
 
 class StopwatchApp:
-    def __init__(self, parent):
-        self.parent = parent
+    def __init__(self, root):
+        self.parent = root
 
         # Stopwatch variables
         self.running = False
@@ -20,8 +20,11 @@ class StopwatchApp:
         # Create the GUI
         self.setup_ui()
 
+
     def setup_ui(self):
         """Setup the entire user interface."""
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
         self.frame = tk.Frame(self.parent)
         self.frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
