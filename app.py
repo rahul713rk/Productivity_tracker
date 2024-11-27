@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import ttk
-from visualization.plot import show_graph
 from tracker.database import Database
 from tracker.stopwatch import StopwatchApp
 from tracker.todo import Todo
@@ -30,12 +29,10 @@ class ProductivityTracker:
         tab1 = ttk.Frame(tab_control)
         tab2 = ttk.Frame(tab_control)
         tab3 = ttk.Frame(tab_control)
-        tab4 = ttk.Frame(tab_control)
 
         tab_control.add(tab1, text="Stopwatch & To-Do List")
-        tab_control.add(tab2, text="Visualization")
-        tab_control.add(tab3 , text= 'Database')
-        tab_control.add(tab4 , text= "Accounts")
+        tab_control.add(tab2 , text= 'Database')
+        tab_control.add(tab3 , text= "Accounts")
         
         tab_control.pack(expand=1, fill='both')
 
@@ -44,12 +41,10 @@ class ProductivityTracker:
         start_tracking(self.stopwatch)
         self.db = Database()
         self.markdown = MarkdownHandler()
-
-        show_graph(tab2)
         
-        self.Viewer = DataViewerApp(tab3)
+        self.Viewer = DataViewerApp(tab2)
 
-        self.setting = GitApp(tab4)
+        self.setting = GitApp(tab3)
 
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)

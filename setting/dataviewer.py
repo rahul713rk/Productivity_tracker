@@ -7,6 +7,9 @@ import numpy as np
 from typing import Optional, Any, Dict, List
 from datetime import datetime
 from tkinter.scrolledtext import ScrolledText
+import plotly.express as px
+import webbrowser
+import os
 
 class DataViewerApp:
     """An advanced Tkinter application for comprehensive data viewing and analysis."""
@@ -25,6 +28,10 @@ class DataViewerApp:
         
         # Store date columns for proper handling
         self.date_columns: List[str] = []
+
+        # Path for files
+        self.graph_file_path = os.path.abspath('./resources/db/graph.html')
+        self.database_file_path = os.path.abspath('./resources/db/main.db')
         
         # Create UI Components
         self.create_widgets()
@@ -92,7 +99,7 @@ class DataViewerApp:
             if not table_name:
                 return
             
-            conn = sqlite3.connect('./resources/db/main.db')
+            conn = sqlite3.connect(self.database_file_path)
             
             # Detect date columns first
             self.date_columns = self.detect_date_columns(table_name)
@@ -119,7 +126,10 @@ class DataViewerApp:
             conn.close()
             
             # Update column menu
-            self.column_menu['values'] = list(self.df.columns)
+            column_name = list(self.df.columns)
+            self.column_menu['values'] = column_name
+            self.x_col_menu['values'] = column_name
+            self.y_col_menu['values'] = column_name
             
             # Display data
             self.display_dataframe()
@@ -131,7 +141,7 @@ class DataViewerApp:
     def load_tables(self):
         """Improved table loading with error handling and async-like behavior."""
         try:
-            conn = sqlite3.connect('./resources/db/main.db')
+            conn = sqlite3.connect(self.database_file_path)
             cursor = conn.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
             tables = [table[0] for table in cursor.fetchall()]
@@ -193,8 +203,9 @@ class DataViewerApp:
         # Create control panels
         self.create_data_controls()
         self.create_statistical_controls()
+        self.create_graph_controls()
         self.create_search_panel()
-        self.create_export_controls()
+        self.create_other_controls()
 
         # Create data view
         self.create_data_view()
@@ -229,44 +240,54 @@ class DataViewerApp:
         controls_frame = ttk.LabelFrame(self.control_frame, text="Table Controls")
         controls_frame.pack(fill="x", pady=10)
 
-        ttk.Label(controls_frame, text="Select Table:").pack(pady=(5,0))
+        combo_frame = ttk.Frame(controls_frame)
+        combo_frame.pack(fill="x" , pady=5)
+
+        table_frame = ttk.Frame(combo_frame)
+        table_frame.pack(fill='x' ,pady=3, padx=3 , side='left')
+
+        column_frame = ttk.Frame(combo_frame)
+        column_frame.pack(fill='x' ,pady=3, padx=3 , side='right')
+
+        ttk.Label(table_frame, text="Select Table").pack(padx = 3)
         self.table_var = tk.StringVar()
         self.table_combo = ttk.Combobox(
-            controls_frame, 
+            table_frame, 
             textvariable=self.table_var, 
             state="readonly",
             width=12
         )
-        self.table_combo.pack(pady=5)
+        self.table_combo.pack(side='left',padx=3)
         self.table_combo.bind('<<ComboboxSelected>>', self.load_data)
         
         # Column selection for sorting and operations
-        ttk.Label(controls_frame, text="Select Column:").pack(pady=(5,0))
+        ttk.Label(column_frame, text="Select Column").pack(padx = 3)
         self.column_var = tk.StringVar()
         self.column_menu = ttk.Combobox(
-            controls_frame,
+            column_frame,
             textvariable=self.column_var,
             state="readonly",
             width=12
         )
-        self.column_menu.pack(pady=5)
+        self.column_menu.pack(side='left',padx=3)
         
         # Sorting buttons
         sort_frame = ttk.Frame(controls_frame)
         sort_frame.pack(fill="x", padx=5, pady=5)
         
+        ttk.Label(sort_frame,text="Sorting").pack(pady=(0,3))
         ttk.Button(
             sort_frame, 
             text="▲ Ascending", 
             command=lambda: self.sort_by_column(ascending=True),
-            width=10
+            width=12
         ).pack(side="left", padx=2)
         
         ttk.Button(
             sort_frame, 
             text="▼ Descending", 
             command=lambda: self.sort_by_column(ascending=False),
-            width=10
+            width=12
         ).pack(side="right", padx=2)
 
     def sort_by_column(self, column: Optional[str] = None, ascending: bool = True) -> None:
@@ -295,13 +316,16 @@ class DataViewerApp:
     def create_statistical_controls(self) -> None:
         """Create advanced statistical analysis controls."""
         stats_frame = ttk.LabelFrame(self.control_frame, text="Statistical Analysis")
-        stats_frame.pack(fill="x", pady=10)
+        stats_frame.pack(fill="x", pady=10 , padx=3)
         
+        combo_frame = ttk.Frame(stats_frame)
+        combo_frame.pack(padx=3 , pady=3 , fill='x' , side='left')
+
         # Aggregation dropdown
-        ttk.Label(stats_frame, text="Aggregation Function:").pack(pady=(5,0))
+        ttk.Label(combo_frame, text="Select Function").pack(padx=3)
         self.agg_var = tk.StringVar()
         self.agg_menu = ttk.Combobox(
-            stats_frame,
+            combo_frame,
             textvariable=self.agg_var,
             values=[
                 "Count", "Min", "Max", "Mean", 
@@ -309,30 +333,29 @@ class DataViewerApp:
                 "Unique Count"
             ],
             state="readonly",
-            width=25
+            width=12
         )
-        self.agg_menu.pack(pady=5)
+        self.agg_menu.pack(padx=3)
         
         # Apply aggregation button
         ttk.Button(
             stats_frame, 
-            text="Apply Statistical Analysis", 
+            text="Apply", 
             command=self.apply_advanced_aggregation
-        ).pack(pady=5)
+        ).pack(padx=3,pady=3 , side='right')
 
     def create_search_panel(self) -> None:
         """Simplified search panel with only contains search."""
         search_frame = ttk.LabelFrame(self.control_frame, text="Search")
-        search_frame.pack(fill="x", pady=10)
+        search_frame.pack(fill="x", pady=5 , padx=5)
         
         self.search_var = tk.StringVar()
         
         # Search entry
-        ttk.Label(search_frame, text="Search :").pack(pady=(5,0))
         search_entry = ttk.Entry(
             search_frame, 
             textvariable=self.search_var, 
-            width=30
+            width=20
         )
         search_entry.pack(pady=5)
         
@@ -376,10 +399,16 @@ class DataViewerApp:
             print(f"Search error: {str(e)}")
             traceback.print_exc()  # Print full traceback for debugging
 
-    def create_export_controls(self) -> None:
-        """Create export and reset controls."""
-        export_frame = ttk.Frame(self.control_frame)
-        export_frame.pack(fill="x", pady=10)
+    def create_other_controls(self) -> None:
+        """Create export , reset and delete controls."""
+        other_frame = ttk.LabelFrame(self.control_frame , text='Other Controls')
+        other_frame.pack(fill='x' , padx=3 , pady=3)
+
+        export_frame = ttk.Frame(other_frame)
+        export_frame.pack(fill="x", pady=5)
+
+        delete_frame = ttk.Frame(other_frame)
+        delete_frame.pack(fill='x' , pady=5)
         
         ttk.Button(
             export_frame, 
@@ -392,6 +421,18 @@ class DataViewerApp:
             text="Reset View", 
             command=self.reset_view
         ).pack(side="right", padx=5, expand=True)
+
+        ttk.Button(
+            delete_frame, 
+            text="Delete\nDatabase",
+            command=self.delete_database
+        ).pack(side="left", padx=5, expand=True)
+        
+        ttk.Button(
+            delete_frame, 
+            text="Delete\nGraph",
+            command=self.delete_html_files
+        ).pack(side='right', padx=5, expand=True)
 
     def apply_advanced_aggregation(self) -> None:
         """Enhanced aggregation with more statistical functions."""
@@ -488,9 +529,112 @@ class DataViewerApp:
         """Reset the view to show original data."""
         self.df = self.original_df.copy()
         self.search_var.set('')
-        self.column_var.set('')
         self.display_dataframe()
         self.update_status("View reset to original data")
 
-    def plot(self):
-        pass
+    def create_graph_controls(self):
+        graph_frame = ttk.LabelFrame(self.control_frame , text = 'Graph Controls')
+        graph_frame.pack(fill='x' , pady=5)
+
+        combo_frame =  ttk.Frame(graph_frame)
+        combo_frame.pack(fill='x' , pady=5)
+
+        x_combo_frame = ttk.Frame(combo_frame)
+        x_combo_frame.pack(fill='x' , side='left' , pady = 3 , padx=3)
+
+        y_combo_frame = ttk.Frame(combo_frame)
+        y_combo_frame.pack(fill='x' , side='right' , pady = 3 , padx=3)
+
+        ttk.Label(x_combo_frame , text='X-Column').pack(padx=3)
+        self.x_col_var = tk.StringVar()
+        self.x_col_menu = ttk.Combobox(
+            x_combo_frame,
+            textvariable=self.x_col_var,
+            state='readonly',
+            width=12
+        )
+        self.x_col_menu.pack(side = 'left' , padx=3)
+
+
+        ttk.Label(y_combo_frame , text='Y-Column').pack(padx=3)
+        self.y_col_var = tk.StringVar()
+        self.y_col_menu = ttk.Combobox(
+            y_combo_frame,
+            textvariable=self.y_col_var,
+            state='readonly',
+            width=12
+        )
+        self.y_col_menu.pack(side = 'left' , padx=3)
+
+
+        button_frame = ttk.Frame(graph_frame)
+        button_frame.pack(fill='x' , pady=5)
+
+        graph_type_frame = ttk.Frame(button_frame)
+        graph_type_frame.pack(fill='x' , side='left' , pady = 3 , padx=3)
+
+
+        ttk.Label(graph_type_frame , text='Graph Type').pack(padx=3)
+        self.graph_type = tk.StringVar()
+        self.graph_type_menu = ttk.Combobox(
+            graph_type_frame,
+            textvariable=self.graph_type,
+            values=['Line' , 'Area' , 'Bar'],
+            state='readonly',
+            width=12
+        )
+        self.graph_type_menu.pack(side = 'left' , padx=3)
+
+        ttk.Button(
+            button_frame, 
+            text="Show\nGraph",
+            command=self.save_plot_as_html 
+        ).pack(padx=3,pady=5 , side='right')
+
+    def generate_graph(self):
+        graph_type = self.graph_type.get()
+        df = self.original_df
+        x_col = self.x_col_var.get()
+        y_col = self.y_col_var.get()
+
+        if x_col == y_col:
+            fig = px.bar(df , x = x_col , y = y_col ,
+                          title='Productivity Tracker\n(Bar Graph)' , labels={y_col : f'{y_col}' , x_col : f'{x_col}'},
+                          template='seaborn')
+        else:
+            if graph_type == 'Line':
+                fig = px.line(df , x = x_col , y = y_col ,
+                            title='Productivity Tracker\n(Line Graph)' , labels={y_col : f'{y_col}' , x_col : f'{x_col}'},
+                            template='seaborn')
+            elif graph_type == 'Area':
+                fig = px.area(df , x = x_col , y = y_col ,
+                            title='Productivity Tracker\n(Area Graph)' , labels={y_col : f'{y_col}' , x_col : f'{x_col}'},
+                            template='seaborn')
+            else:
+                fig = px.bar(df , x = x_col , y = y_col ,
+                            title='Productivity Tracker\n(Bar Graph)' , labels={y_col : f'{y_col}' , x_col : f'{x_col}'},
+                            template='seaborn')
+
+        return fig
+    
+    def save_plot_as_html(self):
+        fig = self.generate_graph()
+        fig.write_html(self.graph_file_path)
+        webbrowser.open(f'file://{os.path.realpath(self.graph_file_path)}')
+
+    def delete_html_files(self):
+        if messagebox.askyesno("Confirm Delete" , "Do you want delete this graph file?"):
+            if os.path.exists(self.graph_file_path):
+                os.remove(self.graph_file_path)
+                print("Graph File ⥤ Deleted")
+            else:
+                print("No File to Delete")
+
+    def delete_database(self):
+        if messagebox.askyesno("Confirm Delete" , "Do you want delete the Database?"):
+            if os.path.exists(self.database_file_path):
+                os.remove(self.database_file_path)
+                print("Database ⥤ Deleted")
+                self.reset_view()
+            else:
+                print("No Database To Delete")
