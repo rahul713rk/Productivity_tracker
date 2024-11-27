@@ -1,14 +1,14 @@
 # Productivity Tracker
 
-**Productivity Tracker** is a Python-based application designed to help users manage their tasks efficiently and monitor their activities throughout the day. The application features a stopwatch for tracking elapsed time on tasks and a to-do list for organizing daily activities. Built using **Tkinter** for the GUI and **SQLite** for data management, this app provides a simple yet powerful tool for boosting productivity.
+**Productivity Tracker** is a Python-based application designed to help users manage their tasks efficiently and monitor their activities throughout the day. The application features a stopwatch for tracking elapsed time on tasks , a to-do list for organizing daily activities , a dataviewer to analyse your productivity (with graph and other controls) and help you to update yourself  on github by automatic committing the daily update readme to your repo . Built using **Tkinter** for the GUI and **SQLite** for data management, this app provides a simple yet powerful tool for boosting productivity.
 
 ## ScreenShots
 
-![](./img/01.png)
+![](resources/img/01.png)
 
-![](./img/02.png)
+![](resources/img/02.png)
 
-![](./img/03.png)
+![](resources/img/03.png)
 
 ## Features
 
@@ -24,16 +24,16 @@
   - Clear and organized layout with a scrollable list of tasks.
   - Dynamic task count display to keep track of your tasks.
 
-- **Activity Tracker:**
+- **Database Analyser:**
   
-  - Monitor keyboard and mouse activity throughout the day.
+  - Monitor your productivity throughout the day.
   - Automatically log daily activity data (keys pressed, mouse clicks) in a SQLite database.
   - Visualize activity data over time using interactive graphs.
 
-- **Data Visualization:**
+- **Git Auto-commit:**
   
-  - Generate graphs to visualize activity trends over the past 10 days.
-  - Open graphs in your default web browser for a more detailed view.
+  - Generate a readme file and setup the git. 
+  - Auto commit your daily progress.
 
 ## Installation
 
