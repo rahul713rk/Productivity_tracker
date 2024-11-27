@@ -39,28 +39,35 @@ class StopwatchApp:
         self.label.pack(pady=10)
 
         # Control buttons
-        self.button_frame = tk.Frame(self.frame)
+        self.button_frame = ttk.Frame(self.frame)
         self.button_frame.pack(pady=5)
-        self.start_button = tk.Button(self.button_frame, text="Start", command=self.start)
+
+        self.button_frame1 = ttk.Frame(self.button_frame)
+        self.button_frame1.pack(pady=5)
+
+        self.button_frame2 = ttk.Frame(self.button_frame)
+        self.button_frame2.pack(pady=5)
+
+        self.start_button = ttk.Button(self.button_frame1, text="Start", command=self.start)
         self.start_button.pack(side="left", padx=5)
-        self.stop_button = tk.Button(self.button_frame, text="Stop", command=self.stop)
-        self.stop_button.pack(side="left", padx=5)
-        self.reset_button = tk.Button(self.button_frame, text="Reset", command=self.reset)
+        self.stop_button = ttk.Button(self.button_frame1, text="Stop", command=self.stop)
+        self.stop_button.pack(side="right", padx=5)
+        self.reset_button = ttk.Button(self.button_frame2, text="Reset", command=self.reset)
         self.reset_button.pack(side="left", padx=5)
         # self.reset_button.config(state='disabled')
-        self.lap_button = tk.Button(self.button_frame, text="Lap", command=self.record_lap)
-        self.lap_button.pack(side="left", padx=5)
+        self.lap_button = ttk.Button(self.button_frame2, text="Lap", command=self.record_lap)
+        self.lap_button.pack(side="right", padx=5)
 
         # Lap display
         self.lap_listbox = tk.Listbox(self.frame, font=("Helvetica", 14), width=30)
         self.lap_listbox.pack(pady=10)
 
         # Activity counters
-        self.counter_frame = tk.Frame(self.frame)
+        self.counter_frame = ttk.Frame(self.frame)
         self.counter_frame.pack(pady=5)
-        self.key_count_label = tk.Label(self.counter_frame, text=f"Keys: {self.key_count}", font=("Helvetica", 16))
+        self.key_count_label = ttk.Label(self.counter_frame, text=f"Keys: {self.key_count}", font=("Helvetica", 16))
         self.key_count_label.pack(side="left", padx=10)
-        self.click_count_label = tk.Label(self.counter_frame, text=f"Clicks: {self.click_count}", font=("Helvetica", 16))
+        self.click_count_label = ttk.Label(self.counter_frame, text=f"Clicks: {self.click_count}", font=("Helvetica", 16))
         self.click_count_label.pack(side="left", padx=10)
 
         # Schedule updates

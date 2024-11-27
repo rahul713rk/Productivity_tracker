@@ -11,6 +11,8 @@ import plotly.express as px
 import webbrowser
 import os
 
+from tracker.database import Database
+
 class DataViewerApp:
     """An advanced Tkinter application for comprehensive data viewing and analysis."""
 
@@ -527,6 +529,7 @@ class DataViewerApp:
 
     def reset_view(self) -> None:
         """Reset the view to show original data."""
+        self.refresh_data()
         self.df = self.original_df.copy()
         self.search_var.set('')
         self.display_dataframe()
@@ -638,3 +641,7 @@ class DataViewerApp:
                 self.reset_view()
             else:
                 print("No Database To Delete")
+    
+    def refresh_data(self):
+        data = Database()
+        self.load_tables()

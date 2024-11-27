@@ -39,9 +39,6 @@ class ProductivityTracker:
         self.stopwatch = StopwatchApp(tab1)
         self.todo_list = Todo(tab1)
         start_tracking(self.stopwatch)
-        self.db = Database()
-        self.markdown = MarkdownHandler()
-        
         self.Viewer = DataViewerApp(tab2)
 
         self.setting = GitApp(tab3)
@@ -53,6 +50,8 @@ class ProductivityTracker:
         """Handle app closure gracefully."""
 
         # Save data
+        self.db = Database()
+        self.markdown = MarkdownHandler()
         self.db.save_daily_data(data=self.stopwatch.export_vars())
         self.markdown.markdown_helper()
 
