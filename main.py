@@ -13,7 +13,7 @@ Type=Application
 Name=Productivity Tracker
 Exec=python3 {app_path}
 Icon={icon_path}
-Terminal=False
+Terminal=true
 Categories=Utility;Application;
 """
     return desktop_entry
