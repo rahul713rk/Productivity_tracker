@@ -59,6 +59,10 @@ sudo apt-get install python3-tk
 ```
 
 ```bash
+python3 -m pip install --upgrade pillow
+```
+
+```bash
 pip install -r resources/others/requirements.txt
 ```
 

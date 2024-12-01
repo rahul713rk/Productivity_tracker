@@ -1,7 +1,6 @@
 opencv-python
 pynput
 matplotlib
-pillow
 plotly 
 pandas
 seaborn
