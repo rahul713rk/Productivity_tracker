@@ -1,8 +1,8 @@
-tk
+opencv-python
 pynput
 matplotlib
-Pillow
+pillow
 plotly 
 pandas
 seaborn
-os
+mediapipe

@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk , messagebox
 import time
+import cv2
+from PIL import Image, ImageTk ,ImageDraw
 
 
 
@@ -17,16 +19,21 @@ class StopwatchApp:
         self.key_count = 0
         self.click_count = 0
 
+        # Face detection variables
+        self.cap = None
+        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        self.face_detected = False
+
         # Create the GUI
         self.setup_ui()
+
+        self.initialize_camera()
 
 
     def setup_ui(self):
         """Setup the entire user interface."""
-        self.style = ttk.Style()
-        self.style.theme_use('clam')
-        self.frame = tk.Frame(self.parent)
-        self.frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        self.frame = tk.Frame(self.parent , width=25)
+        self.frame.pack(side="left", fill="both", expand=False, padx=10, pady=10)
 
         title_frame = ttk.Frame(self.frame)
         title_frame.pack(fill='x', pady=(0, 10))
@@ -34,13 +41,18 @@ class StopwatchApp:
         title_label.pack(side='left')
 
         # Timer display
-        
         self.label = tk.Label(self.frame, text="00:00:00", font=("Helvetica", 48))
         self.label.pack(pady=10)
 
         # Control buttons
-        self.button_frame = ttk.Frame(self.frame)
-        self.button_frame.pack(pady=5)
+        self.frame_2  = ttk.LabelFrame(self.frame , text='Controls')
+        self.frame_2.pack(fill='x' , padx=5 , pady=5)
+
+        self.lap_frame = ttk.LabelFrame(self.frame_2 , text="Lap Records")
+        self.lap_frame.pack(side='left' , fill= 'none' , padx=10 , pady=5)
+
+        self.button_frame = ttk.Frame(self.frame_2)
+        self.button_frame.pack(side='right',pady=5, padx=10)
 
         self.button_frame1 = ttk.Frame(self.button_frame)
         self.button_frame1.pack(pady=5)
@@ -54,25 +66,108 @@ class StopwatchApp:
         self.stop_button.pack(side="right", padx=5)
         self.reset_button = ttk.Button(self.button_frame2, text="Reset", command=self.reset)
         self.reset_button.pack(side="left", padx=5)
-        # self.reset_button.config(state='disabled')
         self.lap_button = ttk.Button(self.button_frame2, text="Lap", command=self.record_lap)
         self.lap_button.pack(side="right", padx=5)
 
         # Lap display
-        self.lap_listbox = tk.Listbox(self.frame, font=("Helvetica", 14), width=30)
-        self.lap_listbox.pack(pady=10)
+        
+        self.lap_listbox = tk.Listbox(self.lap_frame, font=("Helvetica", 14), width=15 , height=5)
+        self.lap_listbox.pack(pady=10 )
+
 
         # Activity counters
-        self.counter_frame = ttk.Frame(self.frame)
-        self.counter_frame.pack(pady=5)
+        self.counter_frame = ttk.LabelFrame(self.frame , text='Activity Tracker')
+        self.counter_frame.pack(pady=5 , fill='x')
         self.key_count_label = ttk.Label(self.counter_frame, text=f"Keys: {self.key_count}", font=("Helvetica", 16))
         self.key_count_label.pack(side="left", padx=10)
         self.click_count_label = ttk.Label(self.counter_frame, text=f"Clicks: {self.click_count}", font=("Helvetica", 16))
         self.click_count_label.pack(side="left", padx=10)
 
+        # Video feed frame
+        self.cam_frame = ttk.LabelFrame(self.frame, text="Camera")
+        self.cam_frame.pack(fill="both", expand=False)
+
+        # Inner frame to contain video feed
+        self.video_frame = ttk.Label(self.cam_frame, text="Start the Camera", font=("Helvetica", 14))
+        self.video_frame.pack(fill="both", expand=False)
+
+        # Toggle camera button
+        self.camera_button_frame = ttk.Frame(self.cam_frame)
+        self.camera_button_frame.pack(fill='x' , side='bottom' , pady=5)
+
+        self.start_camera_button = ttk.Button(self.camera_button_frame,
+                                        text='Start Camera',
+                                        command=self.start_camera)
+        self.start_camera_button.pack(pady=5, side='left')
+
+        self.stop_camera_button = ttk.Button(self.camera_button_frame,
+                                        text='Stop Camera',
+                                        command=self.stop_camera)
+        self.stop_camera_button.pack(pady=5, side='right')
+
         # Schedule updates
         self.update_timer_display()
         self.update_counts()
+        self.update_camera_feed()
+
+    def initialize_camera(self):
+        """Check if the camera is available and initialize."""
+        if self.cap is None:
+            try:
+                self.cap = cv2.VideoCapture(0)
+                if not self.cap.isOpened():
+                    raise ValueError("Camera not accessible.")
+            except Exception:
+                self.cap = None
+                self.video_frame.config(text="Camera not available")
+                self.start_camera_button.config(state="disabled")
+                self.stop_camera_button.config(state='disabled')
+
+
+    def start_camera(self):
+        """Start the camera and initialize the video feed."""
+        try:
+            self.cap = cv2.VideoCapture(0)
+        except Exception:
+            print("error camera is not starting")
+        if self.cap.isOpened():
+            self.start_camera_button.config(state='disabled')
+            self.stop_camera_button.config(state='normal')
+            self.update_camera_feed()
+
+    def stop_camera(self):
+        """Stop the camera and display a placeholder."""
+        if self.cap and self.cap.isOpened():
+            self.cap.release()
+            self.cap = None
+        self.start_camera_button.config(state='normal')
+        self.stop_camera_button.config(state='disabled')
+        self.video_frame.imgtk = None
+        self.video_frame.config(image=None)
+        # self.video_frame.config(text="Camera Feed")
+
+    def update_camera_feed(self):
+        """Update the video feed and detect faces."""
+        if self.cap and self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
+                self.face_detected = len(faces) > 0
+                for (x, y, w, h) in faces:
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                
+                frame = cv2.resize(frame, (300, 200))
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = ImageTk.PhotoImage(Image.fromarray(frame))
+                self.video_frame.imgtk = img
+                self.video_frame.config(image=img)
+            if self.face_detected:
+                self.start()
+            else:
+                self.stop()
+        if self.cap and self.cap.isOpened():
+            self.parent.after(50, self.update_camera_feed)
 
     def start(self):
         """Start the stopwatch."""
@@ -139,3 +234,7 @@ class StopwatchApp:
         res = [self.elapsed_time , self.key_count , self.click_count]
         # print(res)
         return res
+    
+    def __del__(self):
+        if self.cap:
+            self.cap.release()
