@@ -3,6 +3,7 @@ from tkinter import ttk , messagebox
 import time
 import cv2
 from PIL import Image, ImageTk ,ImageDraw
+import mediapipe as mp
 
 
 
@@ -21,8 +22,11 @@ class StopwatchApp:
 
         # Face detection variables
         self.cap = None
-        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         self.face_detected = False
+        self.mp_face_detection = mp.solutions.face_detection
+        self.mp_drawing = mp.solutions.drawing_utils
+        self.face_detection = self.mp_face_detection.FaceDetection(min_detection_confidence=0.5)
+
 
         # Create the GUI
         self.setup_ui()
@@ -151,21 +155,29 @@ class StopwatchApp:
         if self.cap and self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
-                self.face_detected = len(faces) > 0
-                for (x, y, w, h) in faces:
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = self.face_detection.process(rgb_frame)
+
+                if results.detections:
+                    self.face_detected = True
+                    for detection in results.detections:
+                        bboxC = detection.location_data.relative_bounding_box
+                        ih, iw, _ = frame.shape
+                        x, y, w, h = int(bboxC.xmin * iw), int(bboxC.ymin * ih), int(bboxC.width * iw), int(bboxC.height * ih)
+                        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                else:
+                    self.face_detected = False
+
                 frame = cv2.resize(frame, (300, 200))
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 img = ImageTk.PhotoImage(Image.fromarray(frame))
                 self.video_frame.imgtk = img
                 self.video_frame.config(image=img)
+
             if self.face_detected:
                 self.start()
             else:
                 self.stop()
+
         if self.cap and self.cap.isOpened():
             self.parent.after(50, self.update_camera_feed)
 

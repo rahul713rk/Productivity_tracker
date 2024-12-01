@@ -39,6 +39,12 @@
 
 To run the application, follow these steps:
 
+```bash
+sudo apt update
+sudo apt install python3
+sudo apt install git
+```
+
 **Clone the repository:**
 
 ```bash
@@ -47,6 +53,10 @@ cd Productivity_tracker
 ```
 
 **Install required packages:** Make sure you have Python 3.x installed. You may also need to install the required packages:
+
+```bash
+sudo apt-get install python3-tk
+```
 
 ```bash
 pip install -r resources/others/requirements.txt
