@@ -20,10 +20,14 @@ class GitHandler:
         """Get the absolute path of the application root directory"""
         if getattr(sys, 'frozen', False):
             # If running as compiled executable
-            return Path(sys.executable).parent
+            res = Path(sys.executable).parent
+            print("Root file Path",res)
+            return res
         else:
             # If running as script
-            return Path(__file__).parent.parent
+            res = Path(__file__).parent.parent
+            print("Root file Path",res)
+            return res
 
     def _get_config_path(self):
         """Get the absolute path for the config file"""
@@ -45,11 +49,13 @@ class GitHandler:
                     config = json.load(f)
                     # Update with new fields while preserving existing ones
                     default_config.update(config)
+                    
             
             for key, value in default_config.items():
                 setattr(self, key, value)
             
             if default_config['username'] != "":
+                print("Git Configure Data Loaded from json file")
                 self.data = True
                 
         except Exception as e:
@@ -77,6 +83,8 @@ class GitHandler:
             # Update instance variables
             for key, value in config_data.items():
                 setattr(self, key, value)
+            
+            print("Git Configuration saved")
                 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save configuration: {str(e)}")
@@ -86,6 +94,7 @@ class GitHandler:
         """Verify that Git is installed and accessible"""
         try:
             subprocess.run(['git', '--version'], check=True, capture_output=True)
+            print('Git is already installed')
             return True
         except subprocess.CalledProcessError:
             messagebox.showerror("Error", "Git is not installed or not accessible")
@@ -109,6 +118,8 @@ class GitHandler:
             subprocess.run(['git', 'config', '--global', 'user.email', self.email], 
                          check=True, capture_output=True, text=True)
             
+            print('Saving Git config with username and email')
+            
             # Initialize repository if needed
             repo_path = Path(self.local_path)
             if not (repo_path / '.git').exists():
@@ -122,6 +133,10 @@ class GitHandler:
         except Exception as e:
             messagebox.showerror("Error", f"Git setup error: {str(e)}")
             return False
+    
+    def get_remote_url(self):
+        remote_url = f"https://{self.username}:{self.token}@github.com/{self.username}/{self.repo_name}.git"
+        return remote_url
 
     def initialize_repository(self):
         """Initialize a new Git repository and set up remote"""
@@ -131,11 +146,13 @@ class GitHandler:
             
             # Initialize new repository
             subprocess.run(['git', 'init'], check=True, capture_output=True)
+            print('Git init .. ')
             
             # Create README if it doesn't exist
             readme_path = repo_path / 'README.md'
             if not readme_path.exists():
                 readme_path.write_text("# Repository\nInitial commit")
+                print('Creating Readme.md')
             
             # Set up .gitignore
             gitignore_path = repo_path / '.gitignore'
@@ -184,15 +201,19 @@ Thumbs.db
             
             # Initial commit
             subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
+            print("Git Add")
             subprocess.run(['git', 'commit', '-m', "Initial commit"], 
                          check=True, capture_output=True)
+            print('Git Commit (initial)')
             
             # Set main as default branch
             subprocess.run(['git', 'branch', '-M', 'main'], 
                          check=True, capture_output=True)
+            print('Git Branch')
             
             subprocess.run(['git', 'remote', 'add', 'origin', self.get_remote_url()], 
                          check=True, capture_output=True)
+            print('Git remote add origin')
             
             return True
             
@@ -220,12 +241,14 @@ Thumbs.db
                     # Check for changes
                     result = subprocess.run(['git', 'status', '--porcelain'], 
                                         capture_output=True, text=True, check=True)
+                    print('checking status')
                     if not result.stdout.strip():
                         messagebox.showinfo("Info", "No changes to commit")
                         return True
 
                     # Add all changes
                     subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
+                    print("Git Add")
 
                     # Get commit message
                     date = datetime.now().strftime('%Y-%m-%d')
@@ -243,6 +266,7 @@ Thumbs.db
                     commit_message = f'{date} : Auto Commit'
                     subprocess.run(['git', 'commit', '-m', commit_message], 
                                 check=True, capture_output=True)
+                    print('Git Commit (Auto)')
 
                     # Set up environment for authentication
                     git_env = {
@@ -267,6 +291,7 @@ Thumbs.db
                             push_result.stdout,
                             push_result.stderr
                         )
+                    print('Git push')
 
                     messagebox.showinfo("Success", "Changes pushed to GitHub successfully!")
                     return True
@@ -383,6 +408,7 @@ class GitApp:
                     return
 
 
+                self.git_handler.save_config('', '', '', '')
                 self.git_handler.save_config(username, email, repo_name, token)
                 self.git_handler.setup_git()
                 self.update_status()
