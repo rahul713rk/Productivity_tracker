@@ -231,6 +231,10 @@ Thumbs.db
                 try:
                     if not self.verify_git_installation():
                         return False
+                    
+                    repo_path = Path(self.local_path)
+                    if not (repo_path / '.git').exists():
+                        self.initialize_repository()
 
                     repo_path = Path(self.local_path)
                     if not repo_path.is_dir():
