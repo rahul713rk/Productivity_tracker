@@ -213,6 +213,8 @@ Thumbs.db
             
             subprocess.run(['git', 'remote', 'add', 'origin', self.get_remote_url()], 
                          check=True, capture_output=True)
+            subprocess.run(['git', 'pull'], 
+                         check=True, capture_output=True)
             print('Git remote add origin')
             
             return True

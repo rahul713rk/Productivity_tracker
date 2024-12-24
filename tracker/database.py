@@ -92,6 +92,32 @@ class Database:
             (new_status, completed_date, task_id),
         )
         self.conn.commit()
+    
+    def update_task(self, task_id, title , category , priority):
+        self.cursor.execute("SELECT id FROM categories WHERE name = ?", (category,))
+        result = self.cursor.fetchone()
+        category_id = result[0] if result else None
+        self.cursor.execute(
+            """
+        UPDATE tasks 
+        SET title = ?, category_id = ? , priority = ?
+        WHERE id = ?
+        """,
+            (title, category_id, priority, task_id),
+        )
+        self.conn.commit()
+    
+    def update_task_created_date(self , task_id , created_date):
+        self.cursor.execute(
+            """
+        UPDATE tasks 
+        SET created_date = ?
+        WHERE id = ?
+        """,
+            (created_date, task_id),
+        )
+        self.conn.commit()
+        
 
     def get_today_tasks(self):
         today_date = datetime.today().date()

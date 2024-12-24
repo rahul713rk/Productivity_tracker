@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import Toplevel, ttk, messagebox, simpledialog
 from .database import Database
 
 class Todo:
@@ -37,24 +37,7 @@ class Todo:
         input_frame = ttk.Frame(self.frame)
         input_frame.pack(fill='x', pady=5)
 
-        # Task entry
-        self.task_entry = ttk.Entry(input_frame, width=30)
-        self.task_entry.pack(side='left', padx=5)
-        self.task_entry.bind("<Return>", lambda e: self.add_task())
-
-        # Category selection
-        self.category_var = tk.StringVar()
-        self.category_combo = ttk.Combobox(input_frame, textvariable=self.category_var,
-                                           values=self.get_categories(), width=15)
-        self.category_combo.pack(side='left', padx=5)
-        self.category_combo.set('Personal')  # Default category
-
-        # Priority selection
-        self.priority_var = tk.StringVar()
-        priority_combo = ttk.Combobox(input_frame, textvariable=self.priority_var,
-                                      values=['High', 'Medium', 'Low'], width=10)
-        priority_combo.pack(side='left', padx=5)
-        priority_combo.set('Low')  # Default priority
+        self.input_frame_func(input_frame , flag=True , side='left')
 
         # Buttons frame
         buttons_frame = ttk.Frame(self.frame)
@@ -76,6 +59,10 @@ class Todo:
         delete_cat_button = ttk.Button(buttons_frame , text="Delete Category" , command=self.delete_category)
         delete_cat_button.pack(side='left',padx=5)
 
+        # refresh button
+        refresh_button = ttk.Button(buttons_frame , text="Refresh" , command=self.load_tasks)
+        refresh_button.pack(side='left',padx=5)
+
         # Task Frame
         main_task_frame = ttk.Frame(self.frame)
         main_task_frame.pack(fill='both' , expand=True)
@@ -92,6 +79,38 @@ class Todo:
 
         # Right-click menu for status change
         self.create_context_menu()
+
+    def input_frame_func(self , frame , flag , side):
+        # Task entry
+        self.task_entry = ttk.Entry(frame, width=30)
+        if not flag:
+            task_label = ttk.Label(frame , text='Title')
+            task_label.pack(padx=5 , pady=5)
+        self.task_entry.pack(side=side, padx=5 , pady=5)
+        if flag:
+            self.task_entry.bind("<Return>", lambda e: self.add_task())
+
+        # Category selection
+        self.category_var = tk.StringVar()
+        if not flag:
+            category_label = ttk.Label(frame , text='Category')
+            category_label.pack(padx=5 , pady=5)
+        self.category_combo = ttk.Combobox(frame, textvariable=self.category_var,
+                                           values=self.get_categories(), width=15)
+        self.category_combo.pack(side=side, padx=5 , pady=5)
+        if flag:
+            self.category_combo.set('Personal')  # Default category
+
+        # Priority selection
+        self.priority_var = tk.StringVar()
+        if not flag:
+            priority_label = ttk.Label(frame , text='Priority')
+            priority_label.pack(padx=5 , pady=5)
+        self.priority_combo = ttk.Combobox(frame, textvariable=self.priority_var,
+                                      values=['High', 'Medium', 'Low'], width=10)
+        self.priority_combo.pack(side=side, padx=5 , pady=5)
+        if flag:
+            self.priority_combo.set('Low')  # Default priority
     
     def create_tree_table(self , frame , title = 'None' ,  height = 15):
         title_label = ttk.Label(frame, text=title, font=('Helvetica', 15, 'bold'))
@@ -127,10 +146,53 @@ class Todo:
         self.context_menu.add_command(label="Set Pending", command=lambda: self.change_status("Pending"))
         self.context_menu.add_command(label="Set Working", command=lambda: self.change_status("Working"))
         self.context_menu.add_command(label="Set Done", command=lambda: self.change_status("Done"))
+        self.context_menu.add_command(label="Edit", command=lambda: self.edit_task())
 
         # Bind context menu to both trees
         self.main_tree.bind("<Button-3>", lambda e: self.show_context_menu(e, self.main_tree))
         self.done_tree.bind("<Button-3>", lambda e: self.show_context_menu(e, self.done_tree))
+
+    def edit_task(self):
+        """Open a pop-up window for Git account setup"""
+        self.title_popup = Toplevel(self.parent)
+        self.title_popup.title("Edit Task")
+        self.title_popup.geometry("400x400")
+
+        # Determine which tree is currently selected
+        selected_tree = self.main_tree if self.main_tree.selection() else self.done_tree
+        selected_item = selected_tree.selection()
+
+        if selected_item:
+            dic = {}
+            item_id = selected_item[0]
+            dic['task_id'] = selected_tree.item(item_id)['values'][4]  # Fetch hidden ID
+            dic['title'] = selected_tree.item(item_id)['values'][0]
+            dic['category'] = selected_tree.item(item_id)['values'][1]
+            dic['priority'] = selected_tree.item(item_id)['values'][2]
+
+        # Create main frame with padding
+        main_frame = ttk.Frame(self.title_popup, padding="10")
+        main_frame.pack(padx=5 , pady=5, fill='x')
+
+        self.input_frame_func(main_frame , flag=False , side=None)
+        self.task_entry.insert(0,dic['title'])
+        self.category_combo.set(dic['category'])
+        self.priority_combo.set(dic['priority'])
+
+        def update_task():
+            title = self.task_entry.get().strip()
+            category = self.category_combo.get().strip()
+            priority = self.priority_combo.get().strip()
+            if (title != None) and (category != None) and (priority != None):
+                self.db.update_task(task_id=dic['task_id'],
+                                     title=title , 
+                                    category=category ,
+                                      priority=priority)
+                self.task_entry.delete(0 , tk.END)
+                self.title_popup.destroy()
+            self.load_tasks()
+        
+        ttk.Button(main_frame, text="Update", command=update_task).pack(pady=20)
 
     def show_context_menu(self, event, tree):
         try:

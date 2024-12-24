@@ -1,6 +1,6 @@
 import sqlite3
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import Toplevel, ttk, messagebox, filedialog
 import traceback
 import pandas as pd
 import numpy as np
@@ -10,6 +10,7 @@ from tkinter.scrolledtext import ScrolledText
 import plotly.express as px
 import webbrowser
 import os
+from tkcalendar import Calendar
 
 from tracker.database import Database
 
@@ -135,6 +136,7 @@ class DataViewerApp:
             
             # Display data
             self.display_dataframe()
+            self.create_context_menu()
             self.update_status(f"Loaded {len(self.df)} records successfully")
             
         except Exception as e:
@@ -645,3 +647,117 @@ class DataViewerApp:
     def refresh_data(self):
         data = Database()
         self.load_tables()
+
+    def create_context_menu(self):
+        self.context_menu = tk.Menu(self.frame, tearoff=0)
+        self.context_menu.add_command(label="Edit", command=lambda: self.edit_task())
+        self.tree.bind("<Button-3>", lambda e: self.show_context_menu(e, self.tree))
+    
+    def show_context_menu(self, event, tree):
+        try:
+            table_name = self.table_var.get()
+            if table_name == 'tasks':
+                tree.selection_set(tree.identify_row(event.y))
+                self.context_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            self.context_menu.grab_release()
+
+    def edit_frame(self, frame):
+        # Task entry
+        task_label = ttk.Label(frame, text='Title')
+        task_label.pack(padx=5, pady=5)
+
+        self.task_entry = ttk.Entry(frame, width=30)
+        self.task_entry.pack(padx=5, pady=5)
+
+        # Category selection
+        category_label = ttk.Label(frame, text='Category')
+        category_label.pack(padx=5, pady=5)
+
+        self.category_var = tk.StringVar()
+        self.category_combo = ttk.Combobox(frame, textvariable=self.category_var,
+                                        values=self.get_categories(), width=15)
+        self.category_combo.pack(padx=5, pady=5)
+
+        # Priority selection
+        priority_label = ttk.Label(frame, text='Priority')
+        priority_label.pack(padx=5, pady=5)
+        self.priority_var = tk.StringVar()
+        self.priority_combo = ttk.Combobox(frame, textvariable=self.priority_var,
+                                        values=['High', 'Medium', 'Low'], width=10)
+        self.priority_combo.pack(padx=5, pady=5)
+
+        # date selection
+        date_label = ttk.Label(frame, text='Select Date')
+        date_label.pack(padx=5, pady=5)
+
+        self.calendar = Calendar(frame, selectmode='day',
+                                year=datetime.now().year,
+                                month=datetime.now().month,
+                                day=datetime.now().day ,date_pattern='yyyy-mm-dd')
+        self.calendar.pack(padx=5, pady=5)
+    
+    def edit_task(self):
+        """Open a pop-up window for Git account setup"""
+        self.title_popup = Toplevel(self.root)
+        self.title_popup.title("Edit Task")
+        self.title_popup.geometry("500x600")
+
+        selected_tree = self.tree
+        selected_item = selected_tree.selection()
+
+        if selected_item:
+            dic = {}
+            item_id = selected_item[0]
+            dic['task_id'] = selected_tree.item(item_id)['values'][0]  # Fetch hidden ID
+            dic['title'] = selected_tree.item(item_id)['values'][1]
+            dic['category'] = selected_tree.item(item_id)['values'][7]
+            dic['priority'] = selected_tree.item(item_id)['values'][3]
+            dic['date'] = selected_tree.item(item_id)['values'][5]
+
+        # Create main frame with padding
+        main_frame = ttk.Frame(self.title_popup, padding="10")
+        main_frame.pack(padx=5 , pady=5, fill='x')
+
+        self.edit_frame(main_frame)
+        self.task_entry.insert(0,dic['title'])
+        self.category_combo.set(dic['category'])
+        self.priority_combo.set(dic['priority'])
+        self.calendar.selection_set(date=dic['date'])
+
+        def update_task():
+            title = self.task_entry.get().strip()
+            category = self.category_combo.get().strip()
+            priority = self.priority_combo.get().strip()
+            created_date = self.calendar.get_date()
+
+            if (title != None) and (category != None) and (priority != None) and (created_date != None):
+                try:
+                    conn = sqlite3.connect(self.database_file_path)
+                    self.cursor = conn.cursor()
+                    self.cursor.execute(
+                                            """
+                                        UPDATE tasks 
+                                        SET created_date = ?
+                                        WHERE id = ?
+                                        """,
+                                            (created_date, dic['task_id']),
+                                        )
+                    conn.commit()
+                    conn.close()
+                    self.task_entry.delete(0 , tk.END)
+                    self.reset_view()
+                    self.title_popup.destroy()
+
+                except Exception as e:
+                    self.show_error(f"Failed to load tables: {str(e)}")
+        
+        ttk.Button(main_frame, text="Update", command=update_task).pack(pady=20)
+
+    def get_categories(self):
+        conn = sqlite3.connect(self.database_file_path)
+        self.cursor = conn.cursor()
+        self.cursor.execute("SELECT name FROM categories")
+        category = [row[0] for row in self.cursor.fetchall()]
+        conn.close()
+        return category
