@@ -192,10 +192,9 @@ class GitHandler:
                     repo_path = Path(self.local_path)
                     if not (repo_path / '.git').exists():
                         temp = self.initialize_repository()
-                    
-                    if not temp:
-                        messagebox.showerror("Error",f"Invalid repository path: {repo_path}")
-                        return False
+                        if not temp:
+                            messagebox.showerror("Error",f"Invalid repository path: {repo_path}")
+                            return False
 
                     # repo_path = Path(self.local_path)
                     # if not repo_path.is_dir():
