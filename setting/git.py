@@ -147,11 +147,9 @@ class GitHandler:
             # Create README if it doesn't exist
             readme_path = repo_path / 'README.md'
             if not repo_path.is_dir():
-                repo_path.mkdir(parents=True, exist_ok=True)
-                print('Creating directory')
-            if not readme_path.exists():
-                readme_path.write_text("# Repository\nInitial commit")
-                print('Creating Readme.md')
+                messagebox.showerror("Add task and then commit")
+                return False
+                
 
             # Initialize new repository
             subprocess.run(['git', 'init'], check=True, capture_output=True)
@@ -193,11 +191,15 @@ class GitHandler:
                     
                     repo_path = Path(self.local_path)
                     if not (repo_path / '.git').exists():
-                        self.initialize_repository()
+                        temp = self.initialize_repository()
+                    
+                    if not temp:
+                        messagebox.showerror("Error",f"Invalid repository path: {repo_path}")
+                        return False
 
-                    repo_path = Path(self.local_path)
-                    if not repo_path.is_dir():
-                        raise FileNotFoundError(f"Invalid repository path: {repo_path}")
+                    # repo_path = Path(self.local_path)
+                    # if not repo_path.is_dir():
+                    #     raise FileNotFoundError(f"Invalid repository path: {repo_path}")
 
                     os.chdir(repo_path)
 
