@@ -138,22 +138,6 @@ class GitHandler:
         remote_url = f"https://{self.username}:{self.token}@github.com/{self.username}/{self.repo_name}.git"
         return remote_url
 
-    def pull_push(self):
-        try:
-            subprocess.run(['git', 'pull', 'origin', 'main'], check=True)
-
-            # Push changes
-            subprocess.run(['git', 'push', 'origin', 'main', '--force'], check=True)
-
-            print("Branch pull and push completed successfully.")
-
-        except subprocess.CalledProcessError as e:
-            print(f"Error during git operation: {e}")
-        except ValueError as ve:
-            print(ve)
-        except Exception as ex:
-            print(f"Unexpected error: {ex}")
-
     def initialize_repository(self):
         """Initialize a new Git repository and set up remote"""
         try:
@@ -189,9 +173,6 @@ class GitHandler:
             subprocess.run(['git', 'remote', 'add', 'origin', self.get_remote_url()], 
                         check=True, capture_output=True)
             print('Git remote add origin')
-
-            # Integrate setup_and_push_branch function
-            self.pull_push()
 
             return True
 
@@ -267,12 +248,12 @@ class GitHandler:
                     )
 
                     if push_result.returncode != 0:
-                        raise subprocess.CalledProcessError(
-                            push_result.returncode,
-                            push_result.args,
-                            push_result.stdout,
-                            push_result.stderr
-                        )
+                        try:
+                            subprocess.run(['git', 'push', 'origin', 'main', '--force'], check=True)
+                            print('Git push --force')
+                        except subprocess.CalledProcessError as e:
+                            messagebox.showerror("Error", f"Unexpected error: {str(e)}")
+                            return False
                     print('Git push')
 
                     messagebox.showinfo("Success", "Changes pushed to GitHub successfully!")
