@@ -138,32 +138,14 @@ class GitHandler:
         remote_url = f"https://{self.username}:{self.token}@github.com/{self.username}/{self.repo_name}.git"
         return remote_url
 
-    def setup_and_push_branch(self):
+    def pull_push(self):
         try:
-            # Check current branch
-            repo_url = self.get_remote_url()
-            print('repo url given : ',repo_url)
-            branch = subprocess.check_output(['git', 'branch', '--show-current']).strip().decode('utf-8')
-            if branch != "main":
-                subprocess.run(['git', 'checkout', '-b', 'main'], check=True)
-
-            # Set upstream branch
-            subprocess.run(['git', 'branch', '--set-upstream-to=origin/main', 'main'], check=True)
-
-            # Verify remote URL
-            remote_url = subprocess.check_output(['git', 'remote', 'get-url', 'origin']).strip().decode('utf-8')
-            print('remote url : ' , remote_url)
-
-            if remote_url != repo_url:
-                subprocess.run(['git', 'remote', 'set-url', 'origin', repo_url], check=True)
-
-            # Pull latest changes
             subprocess.run(['git', 'pull', 'origin', 'main'], check=True)
 
             # Push changes
-            # subprocess.run(['git', 'push', 'origin', 'main'], check=True)
+            subprocess.run(['git', 'push', 'origin', 'main', '--force'], check=True)
 
-            print("Branch setup and pull completed successfully.")
+            print("Branch pull and push completed successfully.")
 
         except subprocess.CalledProcessError as e:
             print(f"Error during git operation: {e}")
@@ -178,60 +160,23 @@ class GitHandler:
             repo_path = Path(self.local_path)
             os.chdir(repo_path)
 
-            # Initialize new repository
-            subprocess.run(['git', 'init'], check=True, capture_output=True)
-            print('Git init .. ')
-
             # Create README if it doesn't exist
             readme_path = repo_path / 'README.md'
+            if not repo_path.is_dir():
+                repo_path.mkdir(parents=True, exist_ok=True)
+                print('Creating directory')
             if not readme_path.exists():
                 readme_path.write_text("# Repository\nInitial commit")
                 print('Creating Readme.md')
 
-            # Set up .gitignore
-            gitignore_path = repo_path / '.gitignore'
-            if not gitignore_path.exists():
-                gitignore_content = """
-    # Python
-    __pycache__/
-    *.py[cod]
-    *.so
-    .Python
-    build/
-    develop-eggs/
-    dist/
-    downloads/
-    eggs/
-    .eggs/
-    lib/
-    lib64/
-    parts/
-    sdist/
-    var/
-    wheels/
-    *.egg-info/
-    .installed.cfg
-    *.egg
+            # Initialize new repository
+            subprocess.run(['git', 'init'], check=True, capture_output=True)
+            print('Git init .. ')
 
-    # Environment
-    .env
-    venv/
-    ENV/
-    env.bak/
-    venv.bak/
-
-    # IDE
-    .idea/
-    .vscode/
-    *.swp
-    *.swo
-    *~
-
-    # OS
-    .DS_Store
-    Thumbs.db
-    """
-                gitignore_path.write_text(gitignore_content.strip())
+            # Set main as default branch
+            subprocess.run(['git', 'branch', '-M', 'main'], 
+                        check=True, capture_output=True)
+            print('Git branch -M main')
 
             # Initial commit
             subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
@@ -240,18 +185,13 @@ class GitHandler:
                         check=True, capture_output=True)
             print('Git Commit (initial)')
 
-            # Set main as default branch
-            subprocess.run(['git', 'branch', '-M', 'main'], 
-                        check=True, capture_output=True)
-            print('Git Branch')
-
             # Set up remote and pull
             subprocess.run(['git', 'remote', 'add', 'origin', self.get_remote_url()], 
                         check=True, capture_output=True)
             print('Git remote add origin')
 
             # Integrate setup_and_push_branch function
-            self.setup_and_push_branch()
+            self.pull_push()
 
             return True
 
