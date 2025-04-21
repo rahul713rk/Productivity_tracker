@@ -1,34 +1,45 @@
-from datetime import datetime
 import os
+from datetime import datetime
 from .database import Database
 
+
 class MarkdownHandler:
-    def __init__(self):
-        self.db = Database()
-        abs_path = os.path.abspath("./resources/db/Daily_update")
-        os.makedirs(abs_path, exist_ok=True)
-        self.filename = os.path.join(abs_path, "README.md")
+    def __init__(self, db=None, markdown_path="./resources/db/Daily_update/README.md"):
+        # Use an existing Database object or create a new one
+        self.db = db if db else Database()
         
+        # Set the directory and filename for the markdown file
+        self.markdown_dir = os.path.dirname(markdown_path)
+        os.makedirs(self.markdown_dir, exist_ok=True)
+        self.filename = markdown_path
     
     def markdown_helper(self):
-        task = self.db.get_today_tasks()
+        """Main method to update the markdown file."""
+        tasks = self.db.get_today_tasks()
         stats = self.db.get_today_stats()
-        self.update_todo_list(tasks=task , stats=stats)
+        self.update_todo_list(tasks=tasks, stats=stats)
         print("Markdown updated!")
-        
-    def update_todo_list(self, tasks , stats):
-
+    
+    def update_todo_list(self, tasks, stats):
+        """Update the markdown file with today's tasks and statistics."""
         date = datetime.now().strftime('%Y-%m-%d')
-        # print(self.filename)
-        # print(os.getcwd())
         with open(self.filename, 'w', encoding='utf-8') as f:
-            f.write(f"# Todo List | Date : {date} \n\n")
-            if stats is not None:
-                keys , clicks , time = stats
-                f.write(f"Keys : {keys} | Clicks : {clicks} | Time (in Minutes) : {time}")
-            f.write("## Tasks Overview\n\n")
+            # Add the title and date
+            f.write(f"# Todo List | Date: {date}\n\n")
             
-            # Group tasks by status
+            # Add stats if available
+            if stats is not None:
+                keys, clicks, time = stats
+                f.write(f"**Stats for today**:\n")
+                f.write(f"- **Keys Pressed**: {keys}\n")
+                f.write(f"- **Mouse Clicks**: {clicks}\n")
+                f.write(f"- **Time Spent (Minutes)**: {time}\n")
+            else:
+                f.write("**No statistics available for today.**\n")
+            
+            f.write("\n## Tasks Overview\n\n")
+            
+            # Group tasks by their status
             status_groups = {'Pending': [], 'Working': [], 'Done': []}
             for task in tasks:
                 task_id, title, category, priority, status, created, completed = task
@@ -36,10 +47,10 @@ class MarkdownHandler:
 
             # Write tasks by status
             for status, tasks_list in status_groups.items():
-                f.write(f"### {status}\n")
+                f.write(f"### {status} Tasks\n")
                 if tasks_list:
-                    f.write("| Title | Category | Priority | Created | Completed |\n")
-                    f.write("|-------|----------|----------|----------|------------|\n")
+                    f.write("| **Title** | **Category** | **Priority** | **Created** | **Completed** |\n")
+                    f.write("|-----------|--------------|--------------|-------------|----------------|\n")
                     for task in tasks_list:
                         task_id, title, category, priority, status, created, completed = task
                         completed_date = completed if completed else '-'
@@ -47,3 +58,11 @@ class MarkdownHandler:
                 else:
                     f.write("No tasks in this status.\n")
                 f.write("\n")
+    
+    def get_task_statuses(self, tasks):
+        """Helper function to group tasks by status."""
+        status_groups = {'Pending': [], 'Working': [], 'Done': []}
+        for task in tasks:
+            task_id, title, category, priority, status, created, completed = task
+            status_groups[status].append(task)
+        return status_groups
