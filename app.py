@@ -1,74 +1,123 @@
-import tkinter as tk
-from tkinter import ttk
+from PySide6.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QSplitter
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import Qt, QSettings, QRect
+import sys
+import logging
 from tracker.database import Database
 from tracker.stopwatch import StopwatchApp
 from tracker.todo import Todo
 from tracker.markdown_handler import MarkdownHandler
-from tracker.activity_tracker import start_tracking , stop_tracking
-from setting.git import GitApp 
+from tracker.activity_tracker import start_tracking, stop_tracking
+from setting.git import GitApp
 from setting.dataviewer import DataViewerApp
+from pathlib import Path
 
-class ProductivityTracker:
+# Set up logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+class ProductivityTracker(QMainWindow):
     def __init__(self):
-        # Main Window
-        self.root = tk.Tk()
-        self.root.title("Productivity Tracker")
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
+        super().__init__()
+        self.setWindowTitle("Productivity Tracker")
 
-        window_width = int(screen_width * 1)
-        window_height = int(screen_height * 1)
-        position_x = (screen_width - window_width) // 2
-        position_y = (screen_height - window_height) // 2
+        # Load window configuration from QSettings
 
-        self.root.geometry(f"{window_width}x{window_height}+{position_x}+{position_y}")
-        # self.root.wm_state('normal')
+        screen_geometry = QApplication.primaryScreen().availableGeometry()
+        self.setGeometry(screen_geometry)
+        # self.settings = QSettings("Company", "ProductivityTracker")
+        # self.load_window_settings()
 
-        # Tab Control
-        tab_control = ttk.Notebook(self.root)
-        tab1 = ttk.Frame(tab_control)
-        tab2 = ttk.Frame(tab_control)
-        tab3 = ttk.Frame(tab_control)
+        # Set window icon
+        icon_path = Path(__file__).parent / "resources" / "others" / "icon.svg"
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
 
-        tab_control.add(tab1, text="Stopwatch & To-Do List")
-        tab_control.add(tab2 , text= 'Database')
-        tab_control.add(tab3 , text= "Accounts")
-        
-        tab_control.pack(expand=1, fill='both')
+        # Central widget and tab layout
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+        layout = QVBoxLayout(self.central_widget)
 
-        self.stopwatch = StopwatchApp(tab1)
-        self.todo_list = Todo(tab1)
+        # Tab widget
+        self.tab_widget = QTabWidget()
+        layout.addWidget(self.tab_widget)
+
+        self.tab1 = QWidget()
+        self.tab2 = QWidget()
+        self.tab3 = QWidget()
+
+        self.tab_widget.addTab(self.tab1, "Stopwatch & To-Do List")
+        self.tab_widget.addTab(self.tab2, "Database")
+        self.tab_widget.addTab(self.tab3, "Accounts")
+
+        self.setup_tab1()
+        self.setup_tab2()
+        self.setup_tab3()
+
+    def setup_tab1(self):
+        splitter = QSplitter(Qt.Horizontal)
+        self.stopwatch = StopwatchApp()
+        self.todo_list = Todo()
+
+        splitter.addWidget(self.stopwatch)
+        splitter.addWidget(self.todo_list)
+
+        # Optional: Set initial splitter sizes
+        splitter.setSizes([600, 400])
+
+        tab1_layout = QVBoxLayout(self.tab1)
+        tab1_layout.addWidget(splitter)
+
         start_tracking(self.stopwatch)
-        self.Viewer = DataViewerApp(tab2)
 
-        self.setting = GitApp(tab3)
+    def setup_tab2(self):
+        layout = QVBoxLayout(self.tab2)
+        self.viewer = DataViewerApp()
+        layout.addWidget(self.viewer)
 
+    def setup_tab3(self):
+        layout = QVBoxLayout(self.tab3)
+        self.setting = GitApp()
+        layout.addWidget(self.setting)
 
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+    def load_window_settings(self):
+        """Load window size, position, and last tab used from settings."""
+        window_geometry = self.settings.value("geometry", QRect(100, 100, 800, 600))
+        self.setGeometry(window_geometry)
+        last_tab = self.settings.value("lastTab", 0)
+        print(f"Last tab index: {last_tab}")
+        self.tab_widget.setCurrentIndex(last_tab)
 
-    def on_close(self):
-        """Handle app closure gracefully."""
+    def save_window_settings(self):
+        """Save window size, position, and last tab used to settings."""
+        self.settings.setValue("geometry", self.geometry())
+        self.settings.setValue("lastTab", self.tab_widget.currentIndex())
 
-        # Save data
+    def closeEvent(self, event):
+        """Gracefully handle app closure."""
         self.db = Database()
         self.markdown = MarkdownHandler()
         self.db.save_daily_data(data=self.stopwatch.export_vars())
         self.markdown.markdown_helper()
 
-        # Close resources from TodoList
         self.todo_list.close_resources()
         stop_tracking()
         self.db.close()
-
         self.setting.git_handler.commit_and_push()
-        # Destroy the main window
-        self.root.destroy()
 
-    def run(self):
-        """Run the Tkinter main loop."""
-        self.root.mainloop()
+        # Log closure
+        logger.info("App closed and resources saved.")
 
+        # Save window settings before exit
+        self.save_window_settings()
+
+        event.accept()
+
+def main():
+    app = QApplication(sys.argv)
+    tracker = ProductivityTracker()
+    tracker.show()
+    sys.exit(app.exec())
 
 if __name__ == "__main__":
-    app = ProductivityTracker()
-    app.run()
+    main()

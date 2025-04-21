@@ -1,75 +1,273 @@
 import sqlite3
-import tkinter as tk
-from tkinter import Toplevel, ttk, messagebox, filedialog
+import os
 import traceback
+import webbrowser
+from datetime import datetime
+from typing import Optional, List, Dict, Any
+
 import pandas as pd
 import numpy as np
-from typing import Optional, Any, Dict, List
-from datetime import datetime
-from tkinter.scrolledtext import ScrolledText
 import plotly.express as px
-import webbrowser
-import os
-from tkcalendar import Calendar
+
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
+    QLabel, QComboBox, QPushButton, QTreeWidget, QTreeWidgetItem, QHeaderView,
+    QLineEdit, QMessageBox, QFileDialog, QMenu, QStatusBar, QFrame, QSizePolicy
+)
+from PySide6.QtCore import Qt, Signal, QDate
+from PySide6.QtGui import QAction
 
 from tracker.database import Database
 
-class DataViewerApp:
-    """An advanced Tkinter application for comprehensive data viewing and analysis."""
 
-    def __init__(self, root):
-        self.root = root
+class DataViewerApp(QMainWindow):
+    """An advanced PySide6 application for comprehensive data viewing and analysis."""
+
+    def __init__(self):
+        super().__init__()
         
-        # Setup main containers
-        self.setup_layout()
+        # Window setup
+        self.setWindowTitle("Data Viewer")
+        self.resize(1200, 800)
         
         # Initialize state
         self.df = pd.DataFrame()
         self.original_df = pd.DataFrame()
         self.current_sort_column: Optional[str] = None
         self.sort_ascending: bool = True
-        
-        # Store date columns for proper handling
         self.date_columns: List[str] = []
-
+        
         # Path for files
         self.graph_file_path = os.path.abspath('./resources/db/graph.html')
         self.database_file_path = os.path.abspath('./resources/db/main.db')
         
-        # Create UI Components
+        # Create UI
         self.create_widgets()
+        self.setup_connections()
         
-        # Set up keyboard shortcuts
-        self.setup_shortcuts()
-        
-        # Load available tables
+        # Load initial data
         self.load_tables()
 
-    def setup_layout(self) -> None:
-        """Create and configure the main application layout with improved styling."""
-        self.style = ttk.Style()
-        self.style.theme_use('clam')  # More modern theme
+    def create_widgets(self):
+        """Create and configure all UI widgets."""
+        # Main widget and layout
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
         
-        # Main frame with padding
-        self.frame = ttk.Frame(self.root, padding="10")
-        self.frame.pack(fill="both", expand=True)
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setContentsMargins(5, 5, 5, 5)
         
-        # Split into control and data frames
-        self.control_frame = ttk.Frame(self.frame, width=250)
-        self.control_frame.pack(side="left", fill="y", padx=5, pady=5)
+        # Splitter for left/right panels
+        splitter = QSplitter(Qt.Horizontal)
+        main_layout.addWidget(splitter)
         
-        self.data_frame = ttk.Frame(self.frame)
-        self.data_frame.pack(side="right", fill="both", expand=True, padx=5, pady=5)
+        # Left control panel
+        self.control_panel = QWidget()
+        self.control_panel.setMaximumWidth(300)
+        control_layout = QVBoxLayout(self.control_panel)
+        control_layout.setContentsMargins(5, 5, 5, 5)
         
-        # Enhanced status bar
-        self.status_var = tk.StringVar()
-        self.status_bar = ttk.Label(
-            self.root, 
-            textvariable=self.status_var, 
-            relief=tk.SUNKEN, 
-            anchor=tk.W
-        )
-        self.status_bar.pack(side="bottom", fill="x", padx=5, pady=2)
+        # Right data panel
+        self.data_panel = QWidget()
+        data_layout = QVBoxLayout(self.data_panel)
+        data_layout.setContentsMargins(5, 5, 5, 5)
+        
+        splitter.addWidget(self.control_panel)
+        splitter.addWidget(self.data_panel)
+        
+        # Create sections
+        self.create_table_controls(control_layout)
+        self.create_statistical_controls(control_layout)
+        self.create_search_controls(control_layout)
+        self.create_graph_controls(control_layout)
+        self.create_other_controls(control_layout)
+        
+        # Create data view
+        self.create_data_view(data_layout)
+        
+        # Status bar
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        
+        # Add stretch to push controls up
+        control_layout.addStretch()
+
+    def create_table_controls(self, layout):
+        """Create table selection and sorting controls."""
+        group = QFrame()
+        group.setFrameShape(QFrame.StyledPanel)
+        group_layout = QVBoxLayout(group)
+        group_layout.setContentsMargins(5, 5, 5, 5)
+        
+        # Table selection
+        table_label = QLabel("Select Table:")
+        self.table_combo = QComboBox()
+        group_layout.addWidget(table_label)
+        group_layout.addWidget(self.table_combo)
+        
+        # Column selection
+        column_label = QLabel("Select Column:")
+        self.column_combo = QComboBox()
+        group_layout.addWidget(column_label)
+        group_layout.addWidget(self.column_combo)
+        
+        # Sorting buttons
+        sort_layout = QHBoxLayout()
+        self.asc_sort_btn = QPushButton("▲ Ascending")
+        self.desc_sort_btn = QPushButton("▼ Descending")
+        sort_layout.addWidget(self.asc_sort_btn)
+        sort_layout.addWidget(self.desc_sort_btn)
+        
+        group_layout.addLayout(sort_layout)
+        layout.addWidget(group)
+
+    def create_statistical_controls(self, layout):
+        """Create statistical analysis controls."""
+        group = QFrame()
+        group.setFrameShape(QFrame.StyledPanel)
+        group_layout = QVBoxLayout(group)
+        group_layout.setContentsMargins(5, 5, 5, 5)
+        
+        # Aggregation function selection
+        func_label = QLabel("Select Function:")
+        self.func_combo = QComboBox()
+        self.func_combo.addItems([
+            "Count", "Min", "Max", "Mean", 
+            "Median", "Sum", "Unique Count"
+        ])
+        
+        # Apply button
+        self.apply_func_btn = QPushButton("Apply")
+        
+        group_layout.addWidget(func_label)
+        group_layout.addWidget(self.func_combo)
+        group_layout.addWidget(self.apply_func_btn)
+        
+        layout.addWidget(group)
+
+    def create_search_controls(self, layout):
+        """Create search controls."""
+        group = QFrame()
+        group.setFrameShape(QFrame.StyledPanel)
+        group_layout = QVBoxLayout(group)
+        group_layout.setContentsMargins(5, 5, 5, 5)
+        
+        search_label = QLabel("Search:")
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search across all columns...")
+        
+        group_layout.addWidget(search_label)
+        group_layout.addWidget(self.search_input)
+        
+        layout.addWidget(group)
+
+    def create_graph_controls(self, layout):
+        """Create graph controls."""
+        group = QFrame()
+        group.setFrameShape(QFrame.StyledPanel)
+        group_layout = QVBoxLayout(group)
+        group_layout.setContentsMargins(5, 5, 5, 5)
+        
+        # X and Y column selection
+        xy_layout = QHBoxLayout()
+        
+        x_group = QVBoxLayout()
+        x_label = QLabel("X Column:")
+        self.x_col_combo = QComboBox()
+        x_group.addWidget(x_label)
+        x_group.addWidget(self.x_col_combo)
+        
+        y_group = QVBoxLayout()
+        y_label = QLabel("Y Column:")
+        self.y_col_combo = QComboBox()
+        y_group.addWidget(y_label)
+        y_group.addWidget(self.y_col_combo)
+        
+        xy_layout.addLayout(x_group)
+        xy_layout.addLayout(y_group)
+        group_layout.addLayout(xy_layout)
+        
+        # Graph type selection
+        type_label = QLabel("Graph Type:")
+        self.graph_type_combo = QComboBox()
+        self.graph_type_combo.addItems(["Line", "Area", "Bar"])
+        
+        # Show graph button
+        self.show_graph_btn = QPushButton("Show Graph")
+        
+        group_layout.addWidget(type_label)
+        group_layout.addWidget(self.graph_type_combo)
+        group_layout.addWidget(self.show_graph_btn)
+        
+        layout.addWidget(group)
+
+    def create_other_controls(self, layout):
+        """Create export and reset controls."""
+        group = QFrame()
+        group.setFrameShape(QFrame.StyledPanel)
+        group_layout = QVBoxLayout(group)
+        group_layout.setContentsMargins(5, 5, 5, 5)
+        
+        # Button layout
+        btn_layout = QHBoxLayout()
+        self.export_btn = QPushButton("Export to CSV")
+        self.reset_btn = QPushButton("Reset View")
+        btn_layout.addWidget(self.export_btn)
+        btn_layout.addWidget(self.reset_btn)
+        
+        # Delete buttons
+        del_layout = QHBoxLayout()
+        self.del_db_btn = QPushButton("Delete Database")
+        self.del_graph_btn = QPushButton("Delete Graph")
+        del_layout.addWidget(self.del_db_btn)
+        del_layout.addWidget(self.del_graph_btn)
+        
+        group_layout.addLayout(btn_layout)
+        group_layout.addLayout(del_layout)
+        layout.addWidget(group)
+
+    def create_data_view(self, layout):
+        """Create the main data viewing area."""
+        self.tree_widget = QTreeWidget()
+        self.tree_widget.setAlternatingRowColors(True)
+        self.tree_widget.setSortingEnabled(True)
+        self.tree_widget.setUniformRowHeights(True)
+        self.tree_widget.setSelectionMode(QTreeWidget.SingleSelection)
+        self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        
+        # Configure header
+        header = self.tree_widget.header()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        header.setSectionsClickable(True)
+        
+        layout.addWidget(self.tree_widget)
+
+    def setup_connections(self):
+        """Set up all signal-slot connections."""
+        # Table controls
+        self.table_combo.currentTextChanged.connect(self.load_data)
+        self.asc_sort_btn.clicked.connect(lambda: self.sort_by_column(ascending=True))
+        self.desc_sort_btn.clicked.connect(lambda: self.sort_by_column(ascending=False))
+        
+        # Statistical controls
+        self.apply_func_btn.clicked.connect(self.apply_advanced_aggregation)
+        
+        # Search controls
+        self.search_input.textChanged.connect(self.on_search)
+        
+        # Graph controls
+        self.show_graph_btn.clicked.connect(self.save_plot_as_html)
+        
+        # Other controls
+        self.export_btn.clicked.connect(self.export_data)
+        self.reset_btn.clicked.connect(self.reset_view)
+        self.del_db_btn.clicked.connect(self.delete_database)
+        self.del_graph_btn.clicked.connect(self.delete_html_files)
+        
+        # Tree widget connections
+        self.tree_widget.customContextMenuRequested.connect(self.show_context_menu)
+        self.tree_widget.header().sectionClicked.connect(self.on_header_clicked)
 
     def detect_date_columns(self, table_name: str) -> List[str]:
         """Detect columns that contain date/datetime data."""
@@ -95,15 +293,12 @@ class DataViewerApp:
             self.show_error(f"Error detecting date columns: {str(e)}")
             return []
 
-    def load_data(self, event=None) -> None:
+    def load_data(self, table_name: str) -> None:
         """Load data from SQL database with proper datetime handling."""
+        if not table_name:
+            return
+            
         try:
-            table_name = self.table_var.get()
-            if not table_name:
-                return
-            
-            conn = sqlite3.connect(self.database_file_path)
-            
             # Detect date columns first
             self.date_columns = self.detect_date_columns(table_name)
             
@@ -119,31 +314,33 @@ class DataViewerApp:
             
             self.df = pd.read_sql_query(
                 query, 
-                conn,
+                sqlite3.connect(self.database_file_path),
                 parse_dates=self.date_columns
             )
             
             # Store original data
             self.original_df = self.df.copy()
             
-            conn.close()
+            # Update column menus
+            column_names = list(self.df.columns)
+            self.column_combo.clear()
+            self.column_combo.addItems(column_names)
             
-            # Update column menu
-            column_name = list(self.df.columns)
-            self.column_menu['values'] = column_name
-            self.x_col_menu['values'] = column_name
-            self.y_col_menu['values'] = column_name
+            self.x_col_combo.clear()
+            self.x_col_combo.addItems(column_names)
+            
+            self.y_col_combo.clear()
+            self.y_col_combo.addItems(column_names)
             
             # Display data
             self.display_dataframe()
-            self.create_context_menu()
             self.update_status(f"Loaded {len(self.df)} records successfully")
             
         except Exception as e:
             self.show_error(f"Failed to load data: {str(e)}")
 
     def load_tables(self):
-        """Improved table loading with error handling and async-like behavior."""
+        """Load available tables from the database."""
         try:
             conn = sqlite3.connect(self.database_file_path)
             cursor = conn.cursor()
@@ -152,12 +349,12 @@ class DataViewerApp:
             conn.close()
             
             # Update table combobox
-            self.table_combo['values'] = tables
+            self.table_combo.clear()
+            self.table_combo.addItems(tables)
             
-            # Optional: set first table as default if exists
-            if tables:
-                self.table_var.set(tables[2])
-                self.load_data()
+            # Set default table if available
+            if tables and len(tables) > 2:
+                self.table_combo.setCurrentText(tables[2])
                 
         except Exception as e:
             self.show_error(f"Failed to load tables: {str(e)}")
@@ -171,134 +368,29 @@ class DataViewerApp:
         return str(value)
 
     def display_dataframe(self) -> None:
-        """Display the current DataFrame in the Treeview with formatted datetime values."""
-        # Clear existing items
-        self.tree.delete(*self.tree.get_children())
+        """Display the current DataFrame in the TreeWidget."""
+        self.tree_widget.clear()
         
-        # Configure columns
-        self.tree["columns"] = list(self.df.columns)
-        self.tree["show"] = "headings"
+        # Set columns
+        self.tree_widget.setColumnCount(len(self.df.columns))
+        self.tree_widget.setHeaderLabels(list(self.df.columns))
         
-        # Set column headings and adjust widths
-        for col in self.df.columns:
-            self.tree.heading(col, text=col, command=lambda c=col: self.sort_by_column(c))
-            
-            # Calculate maximum width based on column content
-            if col in self.date_columns:
-                # Use fixed width for date columns
-                width = 150
-            else:
-                max_width = max(
-                    len(str(col)),
-                    self.df[col].apply(lambda x: len(self.format_cell_value(x))).max() 
-                    if len(self.df) > 0 else 0
-                )
-                width = min(max_width * 10, 300)
-            
-            self.tree.column(col, width=width)
+        # Add data rows
+        for _, row in self.df.iterrows():
+            item = QTreeWidgetItem()
+            for i, val in enumerate(row):
+                item.setText(i, self.format_cell_value(val))
+            self.tree_widget.addTopLevelItem(item)
         
-        # Insert data with formatted values
-        for idx, row in self.df.iterrows():
-            values = [self.format_cell_value(val) for val in row]
-            self.tree.insert("", "end", values=values)
-
-    def create_widgets(self) -> None:
-        """Create and configure all UI widgets with improved layout and functionality."""
-        # Create control panels
-        self.create_data_controls()
-        self.create_statistical_controls()
-        self.create_graph_controls()
-        self.create_search_panel()
-        self.create_other_controls()
-
-        # Create data view
-        self.create_data_view()
-
-    def create_data_view(self) -> None:
-        """Create the main data viewing area with Treeview."""
-        # Create Treeview with scrollbars
-        self.tree_frame = ttk.Frame(self.data_frame)
-        self.tree_frame.pack(fill="both", expand=True)
-        
-        self.tree = ttk.Treeview(self.tree_frame)
-        
-        # Add scrollbars
-        vsb = ttk.Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
-        hsb = ttk.Scrollbar(self.tree_frame, orient="horizontal", command=self.tree.xview)
-        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        
-        # Grid layout
-        self.tree.grid(column=0, row=0, sticky='nsew')
-        vsb.grid(column=1, row=0, sticky='ns')
-        hsb.grid(column=0, row=1, sticky='ew')
-        
-        self.tree_frame.grid_columnconfigure(0, weight=1)
-        self.tree_frame.grid_rowconfigure(0, weight=1)
-        
-        # Configure Treeview
-        style = ttk.Style()
-        style.configure("Treeview", rowheight=25)
-
-    def create_data_controls(self) -> None:
-        """Create data manipulation control section."""
-        controls_frame = ttk.LabelFrame(self.control_frame, text="Table Controls")
-        controls_frame.pack(fill="x", pady=10)
-
-        combo_frame = ttk.Frame(controls_frame)
-        combo_frame.pack(fill="x" , pady=5)
-
-        table_frame = ttk.Frame(combo_frame)
-        table_frame.pack(fill='x' ,pady=3, padx=3 , side='left')
-
-        column_frame = ttk.Frame(combo_frame)
-        column_frame.pack(fill='x' ,pady=3, padx=3 , side='right')
-
-        ttk.Label(table_frame, text="Select Table").pack(padx = 3)
-        self.table_var = tk.StringVar()
-        self.table_combo = ttk.Combobox(
-            table_frame, 
-            textvariable=self.table_var, 
-            state="readonly",
-            width=12
-        )
-        self.table_combo.pack(side='left',padx=3)
-        self.table_combo.bind('<<ComboboxSelected>>', self.load_data)
-        
-        # Column selection for sorting and operations
-        ttk.Label(column_frame, text="Select Column").pack(padx = 3)
-        self.column_var = tk.StringVar()
-        self.column_menu = ttk.Combobox(
-            column_frame,
-            textvariable=self.column_var,
-            state="readonly",
-            width=12
-        )
-        self.column_menu.pack(side='left',padx=3)
-        
-        # Sorting buttons
-        sort_frame = ttk.Frame(controls_frame)
-        sort_frame.pack(fill="x", padx=5, pady=5)
-        
-        ttk.Label(sort_frame,text="Sorting").pack(pady=(0,3))
-        ttk.Button(
-            sort_frame, 
-            text="▲ Ascending", 
-            command=lambda: self.sort_by_column(ascending=True),
-            width=12
-        ).pack(side="left", padx=2)
-        
-        ttk.Button(
-            sort_frame, 
-            text="▼ Descending", 
-            command=lambda: self.sort_by_column(ascending=False),
-            width=12
-        ).pack(side="right", padx=2)
+        # Resize columns to content
+        for i in range(self.tree_widget.columnCount()):
+            self.tree_widget.resizeColumnToContents(i)
 
     def sort_by_column(self, column: Optional[str] = None, ascending: bool = True) -> None:
         """Sort the DataFrame by the selected column with proper datetime handling."""
         # If no column provided, use the currently selected column
         if column is None:
-            column = self.column_var.get()
+            column = self.column_combo.currentText()
         
         if not column:
             self.show_warning("Please select a column to sort by")
@@ -317,131 +409,15 @@ class DataViewerApp:
         except Exception as e:
             self.show_error(f"Error sorting data: {str(e)}")
 
-    def create_statistical_controls(self) -> None:
-        """Create advanced statistical analysis controls."""
-        stats_frame = ttk.LabelFrame(self.control_frame, text="Statistical Analysis")
-        stats_frame.pack(fill="x", pady=10 , padx=3)
-        
-        combo_frame = ttk.Frame(stats_frame)
-        combo_frame.pack(padx=3 , pady=3 , fill='x' , side='left')
-
-        # Aggregation dropdown
-        ttk.Label(combo_frame, text="Select Function").pack(padx=3)
-        self.agg_var = tk.StringVar()
-        self.agg_menu = ttk.Combobox(
-            combo_frame,
-            textvariable=self.agg_var,
-            values=[
-                "Count", "Min", "Max", "Mean", 
-                "Median", "Sum", 
-                "Unique Count"
-            ],
-            state="readonly",
-            width=12
-        )
-        self.agg_menu.pack(padx=3)
-        
-        # Apply aggregation button
-        ttk.Button(
-            stats_frame, 
-            text="Apply", 
-            command=self.apply_advanced_aggregation
-        ).pack(padx=3,pady=3 , side='right')
-
-    def create_search_panel(self) -> None:
-        """Simplified search panel with only contains search."""
-        search_frame = ttk.LabelFrame(self.control_frame, text="Search")
-        search_frame.pack(fill="x", pady=5 , padx=5)
-        
-        self.search_var = tk.StringVar()
-        
-        # Search entry
-        search_entry = ttk.Entry(
-            search_frame, 
-            textvariable=self.search_var, 
-            width=20
-        )
-        search_entry.pack(pady=5)
-        
-        # Add trace to trigger search on typing
-        self.search_var.trace('w', self.on_search)
-
-    def on_search(self, *args) -> None:
-        """Simplified search method that checks if search text is contained in any column."""
-        try:
-            search_text = self.search_var.get().lower().strip()
-            
-            if search_text:
-                # Reset index of original DataFrame to ensure consistent indexing
-                original_df_reset = self.original_df.reset_index(drop=True)
-                
-                # Create a mask for rows containing the search text
-                mask = original_df_reset.apply(
-                    lambda row: any(
-                        search_text in str(val).lower() 
-                        for val in row if pd.notna(val)
-                    ), 
-                    axis=1
-                )
-                
-                # Filter the DataFrame
-                self.df = original_df_reset[mask].copy()
-            else:
-                # Reset to original data if search is empty
-                self.df = self.original_df.copy()
-            
-            # Display the filtered data
-            self.display_dataframe()
-            
-            # Update status with number of matching records
-            self.update_status(f"Found {len(self.df)} matching records")
-            
-        except Exception as e:
-            # Reset the view and show error message
-            self.reset_view()
-            self.show_error(f"Search error: {str(e)}")
-            print(f"Search error: {str(e)}")
-            traceback.print_exc()  # Print full traceback for debugging
-
-    def create_other_controls(self) -> None:
-        """Create export , reset and delete controls."""
-        other_frame = ttk.LabelFrame(self.control_frame , text='Other Controls')
-        other_frame.pack(fill='x' , padx=3 , pady=3)
-
-        export_frame = ttk.Frame(other_frame)
-        export_frame.pack(fill="x", pady=5)
-
-        delete_frame = ttk.Frame(other_frame)
-        delete_frame.pack(fill='x' , pady=5)
-        
-        ttk.Button(
-            export_frame, 
-            text="Export to CSV", 
-            command=self.export_data
-        ).pack(side="left", padx=5, expand=True)
-        
-        ttk.Button(
-            export_frame, 
-            text="Reset View", 
-            command=self.reset_view
-        ).pack(side="right", padx=5, expand=True)
-
-        ttk.Button(
-            delete_frame, 
-            text="Delete\nDatabase",
-            command=self.delete_database
-        ).pack(side="left", padx=5, expand=True)
-        
-        ttk.Button(
-            delete_frame, 
-            text="Delete\nGraph",
-            command=self.delete_html_files
-        ).pack(side='right', padx=5, expand=True)
+    def on_header_clicked(self, logical_index: int):
+        """Handle header clicks for sorting."""
+        column = self.tree_widget.headerItem().text(logical_index)
+        self.sort_by_column(column)
 
     def apply_advanced_aggregation(self) -> None:
         """Enhanced aggregation with more statistical functions."""
-        col = self.column_var.get()
-        agg_func = self.agg_var.get()
+        col = self.column_combo.currentText()
+        agg_func = self.func_combo.currentText()
         
         if not (col and agg_func):
             self.show_warning("Please select both a column and aggregation function")
@@ -471,13 +447,50 @@ class DataViewerApp:
         except Exception as e:
             self.show_error(f"Error applying aggregation: {str(e)}")
 
-    def export_data(self) -> None:
-        """Enhanced export with user file selection."""
+    def on_search(self, text: str) -> None:
+        """Search across all columns for the given text."""
         try:
-            filename = filedialog.asksaveasfilename(
-                defaultextension=".csv",
-                filetypes=[("CSV files", "*.csv"), ("Excel files", "*.xlsx")],
-                title="Export Data"
+            search_text = text.lower().strip()
+            
+            if search_text:
+                # Reset index of original DataFrame to ensure consistent indexing
+                original_df_reset = self.original_df.reset_index(drop=True)
+                
+                # Create a mask for rows containing the search text
+                mask = original_df_reset.apply(
+                    lambda row: any(
+                        search_text in str(val).lower() 
+                        for val in row if pd.notna(val)
+                    ), 
+                    axis=1
+                )
+                
+                # Filter the DataFrame
+                self.df = original_df_reset[mask].copy()
+            else:
+                # Reset to original data if search is empty
+                self.df = self.original_df.copy()
+            
+            # Display the filtered data
+            self.display_dataframe()
+            self.update_status(f"Found {len(self.df)} matching records")
+            
+        except Exception as e:
+            # Reset the view and show error message
+            self.reset_view()
+            self.show_error(f"Search error: {str(e)}")
+            print(f"Search error: {str(e)}")
+            traceback.print_exc()
+
+    def export_data(self) -> None:
+        """Export data to CSV or Excel file."""
+        try:
+            filename, selected_filter = QFileDialog.getSaveFileName(
+                self,
+                "Export Data",
+                "",
+                "CSV Files (*.csv);;Excel Files (*.xlsx)",
+                options=QFileDialog.Options()
             )
             
             if not filename:
@@ -490,42 +503,32 @@ class DataViewerApp:
                 export_df[col] = export_df[col].dt.strftime("%Y-%m-%d %H:%M:%S")
             
             # Determine file type and export accordingly
-            if filename.endswith('.csv'):
+            if selected_filter == "CSV Files (*.csv)":
+                if not filename.endswith('.csv'):
+                    filename += '.csv'
                 export_df.to_csv(filename, index=False)
-            elif filename.endswith('.xlsx'):
+            else:
+                if not filename.endswith('.xlsx'):
+                    filename += '.xlsx'
                 export_df.to_excel(filename, index=False)
             
             self.update_status(f"Data exported to {filename}")
-            messagebox.showinfo("Export Successful", f"Data exported to {filename}")
+            QMessageBox.information(self, "Export Successful", f"Data exported to {filename}")
             
         except Exception as e:
             self.show_error(f"Error exporting data: {str(e)}")
 
-    def setup_shortcuts(self) -> None:
-        """Enhanced keyboard shortcuts."""
-        shortcut_map = {
-            '<Control-r>': self.reset_view,
-            '<Control-e>': self.export_data,
-            '<Control-f>': lambda: self.search_var.set(''),
-            '<Control-s>': lambda: self.table_combo.event_generate('<<ComboboxSelected>>'),
-            '<Control-a>': self.apply_advanced_aggregation
-        }
-        
-        for shortcut, action in shortcut_map.items():
-            self.root.bind(shortcut, lambda e, a=action: a())
-
     def update_status(self, message: str) -> None:
         """Update the status bar message."""
-        self.status_var.set(message)
+        self.status_bar.showMessage(message)
 
     def show_warning(self, message: str) -> None:
         """Show a warning message dialog."""
-        messagebox.showwarning("Warning", message)
+        QMessageBox.warning(self, "Warning", message)
 
     def show_error(self, message: str) -> None:
         """Show an error message dialog."""
-        messagebox.showerror("Error", message)
-        # Optional: log the error
+        QMessageBox.critical(self, "Error", message)
         print(f"Error: {message}")
         self.reset_view()
 
@@ -533,231 +536,206 @@ class DataViewerApp:
         """Reset the view to show original data."""
         self.refresh_data()
         self.df = self.original_df.copy()
-        self.search_var.set('')
+        self.search_input.clear()
         self.display_dataframe()
         self.update_status("View reset to original data")
 
-    def create_graph_controls(self):
-        graph_frame = ttk.LabelFrame(self.control_frame , text = 'Graph Controls')
-        graph_frame.pack(fill='x' , pady=5)
-
-        combo_frame =  ttk.Frame(graph_frame)
-        combo_frame.pack(fill='x' , pady=5)
-
-        x_combo_frame = ttk.Frame(combo_frame)
-        x_combo_frame.pack(fill='x' , side='left' , pady = 3 , padx=3)
-
-        y_combo_frame = ttk.Frame(combo_frame)
-        y_combo_frame.pack(fill='x' , side='right' , pady = 3 , padx=3)
-
-        ttk.Label(x_combo_frame , text='X-Column').pack(padx=3)
-        self.x_col_var = tk.StringVar()
-        self.x_col_menu = ttk.Combobox(
-            x_combo_frame,
-            textvariable=self.x_col_var,
-            state='readonly',
-            width=12
-        )
-        self.x_col_menu.pack(side = 'left' , padx=3)
-
-
-        ttk.Label(y_combo_frame , text='Y-Column').pack(padx=3)
-        self.y_col_var = tk.StringVar()
-        self.y_col_menu = ttk.Combobox(
-            y_combo_frame,
-            textvariable=self.y_col_var,
-            state='readonly',
-            width=12
-        )
-        self.y_col_menu.pack(side = 'left' , padx=3)
-
-
-        button_frame = ttk.Frame(graph_frame)
-        button_frame.pack(fill='x' , pady=5)
-
-        graph_type_frame = ttk.Frame(button_frame)
-        graph_type_frame.pack(fill='x' , side='left' , pady = 3 , padx=3)
-
-
-        ttk.Label(graph_type_frame , text='Graph Type').pack(padx=3)
-        self.graph_type = tk.StringVar()
-        self.graph_type_menu = ttk.Combobox(
-            graph_type_frame,
-            textvariable=self.graph_type,
-            values=['Line' , 'Area' , 'Bar'],
-            state='readonly',
-            width=12
-        )
-        self.graph_type_menu.pack(side = 'left' , padx=3)
-
-        ttk.Button(
-            button_frame, 
-            text="Show\nGraph",
-            command=self.save_plot_as_html 
-        ).pack(padx=3,pady=5 , side='right')
-
     def generate_graph(self):
-        graph_type = self.graph_type.get()
+        """Generate the plotly graph based on current selections."""
+        graph_type = self.graph_type_combo.currentText()
         df = self.original_df
-        x_col = self.x_col_var.get()
-        y_col = self.y_col_var.get()
+        x_col = self.x_col_combo.currentText()
+        y_col = self.y_col_combo.currentText()
+
+        if not x_col or not y_col:
+            self.show_warning("Please select both X and Y columns")
+            return None
 
         if x_col == y_col:
-            fig = px.bar(df , x = x_col , y = y_col ,
-                          title='Productivity Tracker\n(Bar Graph)' , labels={y_col : f'{y_col}' , x_col : f'{x_col}'},
-                          template='seaborn')
+            fig = px.bar(df, x=x_col, y=y_col,
+                        title='Productivity Tracker\n(Bar Graph)', 
+                        labels={y_col: f'{y_col}', x_col: f'{x_col}'},
+                        template='seaborn')
         else:
             if graph_type == 'Line':
-                fig = px.line(df , x = x_col , y = y_col ,
-                            title='Productivity Tracker\n(Line Graph)' , labels={y_col : f'{y_col}' , x_col : f'{x_col}'},
+                fig = px.line(df, x=x_col, y=y_col,
+                            title='Productivity Tracker\n(Line Graph)', 
+                            labels={y_col: f'{y_col}', x_col: f'{x_col}'},
                             template='seaborn')
             elif graph_type == 'Area':
-                fig = px.area(df , x = x_col , y = y_col ,
-                            title='Productivity Tracker\n(Area Graph)' , labels={y_col : f'{y_col}' , x_col : f'{x_col}'},
+                fig = px.area(df, x=x_col, y=y_col,
+                            title='Productivity Tracker\n(Area Graph)', 
+                            labels={y_col: f'{y_col}', x_col: f'{x_col}'},
                             template='seaborn')
             else:
-                fig = px.bar(df , x = x_col , y = y_col ,
-                            title='Productivity Tracker\n(Bar Graph)' , labels={y_col : f'{y_col}' , x_col : f'{x_col}'},
+                fig = px.bar(df, x=x_col, y=y_col,
+                            title='Productivity Tracker\n(Bar Graph)', 
+                            labels={y_col: f'{y_col}', x_col: f'{x_col}'},
                             template='seaborn')
 
         return fig
-    
+
     def save_plot_as_html(self):
+        """Save the plot as HTML and open in browser."""
         fig = self.generate_graph()
+        if fig is None:
+            return
+            
         fig.write_html(self.graph_file_path)
         webbrowser.open(f'file://{os.path.realpath(self.graph_file_path)}')
 
     def delete_html_files(self):
-        if messagebox.askyesno("Confirm Delete" , "Do you want delete this graph file?"):
+        """Delete the graph HTML file."""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            "Do you want to delete this graph file?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
             if os.path.exists(self.graph_file_path):
                 os.remove(self.graph_file_path)
-                print("Graph File ⥤ Deleted")
+                self.update_status("Graph file deleted")
             else:
-                print("No File to Delete")
+                self.update_status("No graph file to delete")
 
     def delete_database(self):
-        if messagebox.askyesno("Confirm Delete" , "Do you want delete the Database?"):
+        """Delete the database file."""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            "Do you want to delete the database?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
             if os.path.exists(self.database_file_path):
                 os.remove(self.database_file_path)
-                print("Database ⥤ Deleted")
+                self.update_status("Database deleted")
                 self.reset_view()
             else:
-                print("No Database To Delete")
-    
+                self.update_status("No database to delete")
+
     def refresh_data(self):
+        """Refresh the data from the database."""
         data = Database()
         self.load_tables()
 
-    def create_context_menu(self):
-        self.context_menu = tk.Menu(self.frame, tearoff=0)
-        self.context_menu.add_command(label="Edit", command=lambda: self.edit_task())
-        self.tree.bind("<Button-3>", lambda e: self.show_context_menu(e, self.tree))
-    
-    def show_context_menu(self, event, tree):
-        try:
-            table_name = self.table_var.get()
-            if table_name == 'tasks':
-                tree.selection_set(tree.identify_row(event.y))
-                self.context_menu.tk_popup(event.x_root, event.y_root)
-        finally:
-            self.context_menu.grab_release()
-
-    def edit_frame(self, frame):
-        # Task entry
-        task_label = ttk.Label(frame, text='Title')
-        task_label.pack(padx=5, pady=5)
-
-        self.task_entry = ttk.Entry(frame, width=30)
-        self.task_entry.pack(padx=5, pady=5)
-
-        # Category selection
-        category_label = ttk.Label(frame, text='Category')
-        category_label.pack(padx=5, pady=5)
-
-        self.category_var = tk.StringVar()
-        self.category_combo = ttk.Combobox(frame, textvariable=self.category_var,
-                                        values=self.get_categories(), width=15)
-        self.category_combo.pack(padx=5, pady=5)
-
-        # Priority selection
-        priority_label = ttk.Label(frame, text='Priority')
-        priority_label.pack(padx=5, pady=5)
-        self.priority_var = tk.StringVar()
-        self.priority_combo = ttk.Combobox(frame, textvariable=self.priority_var,
-                                        values=['High', 'Medium', 'Low'], width=10)
-        self.priority_combo.pack(padx=5, pady=5)
-
-        # date selection
-        date_label = ttk.Label(frame, text='Select Date')
-        date_label.pack(padx=5, pady=5)
-
-        self.calendar = Calendar(frame, selectmode='day',
-                                year=datetime.now().year,
-                                month=datetime.now().month,
-                                day=datetime.now().day ,date_pattern='yyyy-mm-dd')
-        self.calendar.pack(padx=5, pady=5)
-    
-    def edit_task(self):
-        """Open a pop-up window for Git account setup"""
-        self.title_popup = Toplevel(self.root)
-        self.title_popup.title("Edit Task")
-        self.title_popup.geometry("500x600")
-
-        selected_tree = self.tree
-        selected_item = selected_tree.selection()
-
-        if selected_item:
-            dic = {}
-            item_id = selected_item[0]
-            dic['task_id'] = selected_tree.item(item_id)['values'][0]  # Fetch hidden ID
-            dic['title'] = selected_tree.item(item_id)['values'][1]
-            dic['category'] = selected_tree.item(item_id)['values'][7]
-            dic['priority'] = selected_tree.item(item_id)['values'][3]
-            dic['date'] = selected_tree.item(item_id)['values'][5]
-
-        # Create main frame with padding
-        main_frame = ttk.Frame(self.title_popup, padding="10")
-        main_frame.pack(padx=5 , pady=5, fill='x')
-
-        self.edit_frame(main_frame)
-        self.task_entry.insert(0,dic['title'])
-        self.category_combo.set(dic['category'])
-        self.priority_combo.set(dic['priority'])
-        self.calendar.selection_set(date=dic['date'])
-
-        def update_task():
-            title = self.task_entry.get().strip()
-            category = self.category_combo.get().strip()
-            priority = self.priority_combo.get().strip()
-            created_date = self.calendar.get_date()
-
-            if (title != None) and (category != None) and (priority != None) and (created_date != None):
-                try:
-                    conn = sqlite3.connect(self.database_file_path)
-                    self.cursor = conn.cursor()
-                    self.cursor.execute(
-                                            """
-                                        UPDATE tasks 
-                                        SET created_date = ?
-                                        WHERE id = ?
-                                        """,
-                                            (created_date, dic['task_id']),
-                                        )
-                    conn.commit()
-                    conn.close()
-                    self.task_entry.delete(0 , tk.END)
-                    self.reset_view()
-                    self.title_popup.destroy()
-
-                except Exception as e:
-                    self.show_error(f"Failed to load tables: {str(e)}")
+    def show_context_menu(self, position):
+        """Show context menu for editing tasks."""
+        table_name = self.table_combo.currentText()
+        if table_name != 'tasks':
+            return
+            
+        item = self.tree_widget.itemAt(position)
+        if not item:
+            return
+            
+        # Create context menu
+        menu = QMenu()
+        edit_action = QAction("Edit", self)
+        edit_action.triggered.connect(lambda: self.edit_task(item))
+        menu.addAction(edit_action)
         
-        ttk.Button(main_frame, text="Update", command=update_task).pack(pady=20)
+        # Show the menu
+        menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
+
+    def edit_task(self, item):
+        """Edit the selected task."""
+        # Create dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Edit Task")
+        dialog.resize(400, 500)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # Get task data from the selected item
+        task_id = item.text(0)  # Assuming ID is in first column
+        title = item.text(1)
+        category = item.text(7)  # Adjust indices based on your actual columns
+        priority = item.text(3)
+        date_str = item.text(5)
+        
+        # Create form widgets
+        form_layout = QFormLayout()
+        
+        self.title_edit = QLineEdit(title)
+        form_layout.addRow("Title:", self.title_edit)
+        
+        self.category_combo = QComboBox()
+        self.category_combo.addItems(self.get_categories())
+        self.category_combo.setCurrentText(category)
+        form_layout.addRow("Category:", self.category_combo)
+        
+        self.priority_combo = QComboBox()
+        self.priority_combo.addItems(["High", "Medium", "Low"])
+        self.priority_combo.setCurrentText(priority)
+        form_layout.addRow("Priority:", self.priority_combo)
+        
+        self.date_edit = QDateEdit()
+        date = QDate.fromString(date_str, "yyyy-MM-dd")
+        self.date_edit.setDate(date)
+        form_layout.addRow("Date:", self.date_edit)
+        
+        layout.addLayout(form_layout)
+        
+        # Add buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(lambda: self.update_task(dialog, task_id))
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+        
+        dialog.exec_()
+
+    def update_task(self, dialog, task_id):
+        """Update the task in the database."""
+        title = self.title_edit.text().strip()
+        category = self.category_combo.currentText()
+        priority = self.priority_combo.currentText()
+        date = self.date_edit.date().toString("yyyy-MM-dd")
+        
+        if not title:
+            QMessageBox.warning(self, "Warning", "Title cannot be empty")
+            return
+            
+        try:
+            conn = sqlite3.connect(self.database_file_path)
+            cursor = conn.cursor()
+            
+            # First get category ID
+            cursor.execute("SELECT id FROM categories WHERE name = ?", (category,))
+            category_id = cursor.fetchone()[0]
+            
+            # Update the task
+            cursor.execute(
+                """
+                UPDATE tasks 
+                SET title = ?, category_id = ?, priority = ?, created_date = ?
+                WHERE id = ?
+                """,
+                (title, category_id, priority, date, task_id)
+            )
+            
+            conn.commit()
+            conn.close()
+            
+            self.reset_view()
+            dialog.accept()
+            
+        except Exception as e:
+            self.show_error(f"Failed to update task: {str(e)}")
 
     def get_categories(self):
-        conn = sqlite3.connect(self.database_file_path)
-        self.cursor = conn.cursor()
-        self.cursor.execute("SELECT name FROM categories")
-        category = [row[0] for row in self.cursor.fetchall()]
-        conn.close()
-        return category
+        """Get list of categories from database."""
+        try:
+            conn = sqlite3.connect(self.database_file_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM categories")
+            categories = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            return categories
+        except Exception as e:
+            self.show_error(f"Failed to load categories: {str(e)}")
+            return []
+

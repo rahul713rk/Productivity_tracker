@@ -1,11 +1,14 @@
 from datetime import datetime
-import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog, Toplevel, filedialog
-import subprocess
+from pathlib import Path
 import json
 import os
-from pathlib import Path
+import subprocess
 import sys
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
+                              QLabel, QPushButton, QLineEdit, QMessageBox, QDialog)
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
+
 
 class GitHandler:
     def __init__(self):
@@ -20,18 +23,15 @@ class GitHandler:
         """Get the absolute path of the application root directory"""
         if getattr(sys, 'frozen', False):
             # If running as compiled executable
-            res = Path(sys.executable).parent
-            print("Root file Path",res)
-            return res
+            return Path(sys.executable).parent
         else:
             # If running as script
-            res = Path(__file__).parent.parent
-            print("Root file Path",res)
-            return res
+            return Path(__file__).parent.parent
 
     def _get_config_path(self):
         """Get the absolute path for the config file"""
         config_dir = self.app_root / "resources" / "others"
+        config_dir.mkdir(parents=True, exist_ok=True)
         return config_dir / "git_config.json"
 
     def load_config(self):
@@ -49,27 +49,22 @@ class GitHandler:
                     config = json.load(f)
                     # Update with new fields while preserving existing ones
                     default_config.update(config)
-                    
             
             for key, value in default_config.items():
                 setattr(self, key, value)
             
-            if default_config['username'] != "":
-                print("Git Configure Data Loaded from json file")
+            if default_config['username']:
+                print("Git Configuration Data Loaded from json file")
                 self.data = True
                 
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to load configuration: {str(e)}")
+            QMessageBox.critical(None, "Error", f"Failed to load configuration: {str(e)}")
             for key, value in default_config.items():
                 setattr(self, key, value)
 
     def save_config(self, username, email, repo_name, token):
         """Save Git credentials to a config file"""
         try:
-            
-            # Ensure the config directory exists
-            self.config_path.parent.mkdir(parents=True, exist_ok=True)
-            
             config_data = {
                 "username": username,
                 "email": email,
@@ -85,22 +80,20 @@ class GitHandler:
                 setattr(self, key, value)
             
             print("Git Configuration saved")
+            return True
                 
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save configuration: {str(e)}")
-            raise
+            QMessageBox.critical(None, "Error", f"Failed to save configuration: {str(e)}")
+            return False
 
     def verify_git_installation(self):
         """Verify that Git is installed and accessible"""
         try:
             subprocess.run(['git', '--version'], check=True, capture_output=True)
-            print('Git is already installed')
+            print('Git is installed')
             return True
-        except subprocess.CalledProcessError:
-            messagebox.showerror("Error", "Git is not installed or not accessible")
-            return False
-        except FileNotFoundError:
-            messagebox.showerror("Error", "Git executable not found in system PATH")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            QMessageBox.critical(None, "Error", "Git is not installed or not accessible")
             return False
 
     def setup_git(self):
@@ -118,7 +111,7 @@ class GitHandler:
             subprocess.run(['git', 'config', '--global', 'user.email', self.email], 
                          check=True, capture_output=True, text=True)
             
-            print('Saving Git config with username and email')
+            print('Git config set with username and email')
             
             # Initialize repository if needed
             repo_path = Path(self.local_path)
@@ -128,28 +121,25 @@ class GitHandler:
             return True
                 
         except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", f"Git configuration failed: {e.stderr}")
+            QMessageBox.critical(None, "Error", f"Git configuration failed: {e.stderr}")
             return False
         except Exception as e:
-            messagebox.showerror("Error", f"Git setup error: {str(e)}")
+            QMessageBox.critical(None, "Error", f"Git setup error: {str(e)}")
             return False
     
     def get_remote_url(self):
-        remote_url = f"https://{self.username}:{self.token}@github.com/{self.username}/{self.repo_name}.git"
-        return remote_url
+        """Construct the remote URL for the repository"""
+        return f"https://{self.username}:{self.token}@github.com/{self.username}/{self.repo_name}.git"
 
     def initialize_repository(self):
         """Initialize a new Git repository and set up remote"""
         try:
             repo_path = Path(self.local_path)
-            os.chdir(repo_path)
-
-            # Create README if it doesn't exist
-            readme_path = repo_path / 'README.md'
             if not repo_path.is_dir():
-                messagebox.showerror("Add task and then commit")
+                QMessageBox.critical(None, "Error", "Add task and then commit")
                 return False
-                
+
+            os.chdir(repo_path)
 
             # Initialize new repository
             subprocess.run(['git', 'init'], check=True, capture_output=True)
@@ -175,212 +165,218 @@ class GitHandler:
             return True
 
         except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", f"Repository initialization failed: {e.stderr}")
+            QMessageBox.critical(None, "Error", f"Repository initialization failed: {e.stderr}")
             return False
         except Exception as e:
-            messagebox.showerror("Error", f"Repository initialization error: {str(e)}")
+            QMessageBox.critical(None, "Error", f"Repository initialization error: {str(e)}")
             return False
 
-    def commit_and_push(self, commit_message=None):
+    def commit_and_push(self):
         """Perform Git commit and push using Personal Access Token for authentication"""
-        if self.data == True:
-            if messagebox.askyesno("Confirm" , "Do u want to commit and push into github ?"):
+        if not self.data:
+            QMessageBox.warning(None, "Warning", "Please configure Git account first")
+            return False
+
+        reply = QMessageBox.question(
+            None, 
+            "Confirm", 
+            "Do you want to commit and push to GitHub?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply != QMessageBox.Yes:
+            return False
+
+        try:
+            if not self.verify_git_installation():
+                return False
+            
+            repo_path = Path(self.local_path)
+            if not (repo_path / '.git').exists():
+                if not self.initialize_repository():
+                    QMessageBox.critical(None, "Error", f"Invalid repository path: {repo_path}")
+                    return False
+
+            os.chdir(repo_path)
+
+            # Check for changes
+            result = subprocess.run(['git', 'status', '--porcelain'], 
+                                capture_output=True, text=True, check=True)
+            print('Checking status')
+            if not result.stdout.strip():
+                QMessageBox.information(None, "Info", "No changes to commit")
+                return True
+
+            # Add all changes
+            subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
+            print("Git Add")
+
+            # Commit changes
+            date = datetime.now().strftime('%Y-%m-%d')
+            commit_message = f'{date} : Auto Commit'
+            subprocess.run(['git', 'commit', '-m', commit_message], 
+                        check=True, capture_output=True)
+            print('Git Commit (Auto)')
+
+            # Set up environment for authentication
+            git_env = {
+                **os.environ,
+                'GIT_ASKPASS': 'echo',
+                'GIT_USERNAME': self.username,
+                'GIT_PASSWORD': self.token
+            }
+
+            # Push to remote using token
+            push_result = subprocess.run(
+                ['git', 'push', '-u', 'origin', 'main'],
+                env=git_env,
+                capture_output=True,
+                text=True
+            )
+
+            if push_result.returncode != 0:
                 try:
-                    if not self.verify_git_installation():
-                        return False
-                    
-                    repo_path = Path(self.local_path)
-                    if not (repo_path / '.git').exists():
-                        temp = self.initialize_repository()
-                        if not temp:
-                            messagebox.showerror("Error",f"Invalid repository path: {repo_path}")
-                            return False
-
-                    # repo_path = Path(self.local_path)
-                    # if not repo_path.is_dir():
-                    #     raise FileNotFoundError(f"Invalid repository path: {repo_path}")
-
-                    os.chdir(repo_path)
-
-                    # Check for changes
-                    result = subprocess.run(['git', 'status', '--porcelain'], 
-                                        capture_output=True, text=True, check=True)
-                    print('checking status')
-                    if not result.stdout.strip():
-                        messagebox.showinfo("Info", "No changes to commit")
-                        return True
-
-                    # Add all changes
-                    subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
-                    print("Git Add")
-
-                    # Get commit message
-                    date = datetime.now().strftime('%Y-%m-%d')
-                    # if not commit_message:
-                    #     commit_message = simpledialog.askstring(
-                    #         "Commit Message", 
-                    #         "Enter commit message:",
-                    #         initialvalue= f'{date} : Auto Commit'
-                    #     )
-                    #     if not commit_message:
-                    #         return False
-
-                    # Commit changes
-
-                    commit_message = f'{date} : Auto Commit'
-                    subprocess.run(['git', 'commit', '-m', commit_message], 
-                                check=True, capture_output=True)
-                    print('Git Commit (Auto)')
-
-                    # Set up environment for authentication
-                    git_env = {
-                        **os.environ,
-                        'GIT_ASKPASS': 'echo',
-                        'GIT_USERNAME': self.username,
-                        'GIT_PASSWORD': self.token
-                    }
-
-                    # Push to remote using token
-                    push_result = subprocess.run(
-                        ['git', 'push', '-u', 'origin', 'main'],
-                        env=git_env,
-                        capture_output=True,
-                        text=True
-                    )
-
-                    if push_result.returncode != 0:
-                        try:
-                            subprocess.run(['git', 'push', 'origin', 'main', '--force'], check=True)
-                            print('Git push --force')
-                        except subprocess.CalledProcessError as e:
-                            messagebox.showerror("Error", f"Unexpected error: {str(e)}")
-                            return False
-                    print('Git push')
-
-                    messagebox.showinfo("Success", "Changes pushed to GitHub successfully!")
-                    return True
-                    
+                    subprocess.run(['git', 'push', 'origin', 'main', '--force'], check=True)
+                    print('Git push --force')
                 except subprocess.CalledProcessError as e:
-                    error_msg = e.stderr if hasattr(e, 'stderr') else str(e)
-                    messagebox.showerror("Error", f"Git operation failed: {error_msg}")
+                    QMessageBox.critical(None, "Error", f"Unexpected error: {str(e)}")
                     return False
-                except Exception as e:
-                    messagebox.showerror("Error", f"Unexpected error: {str(e)}")
-                    return False
+            print('Git push')
+
+            QMessageBox.information(None, "Success", "Changes pushed to GitHub successfully!")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            error_msg = e.stderr if e.stderr else str(e)
+            QMessageBox.critical(None, "Error", f"Git operation failed: {error_msg}")
+            return False
+        except Exception as e:
+            QMessageBox.critical(None, "Error", f"Unexpected error: {str(e)}")
+            return False
 
 
-class GitApp:
-    def __init__(self, parent):
-        self.parent = parent
-        self.frame = ttk.Frame(parent)
-        self.frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+class AccountDialog(QDialog):
+    """Dialog for entering Git account information"""
+    def __init__(self, git_handler, parent=None):
+        super().__init__(parent)
+        self.git_handler = git_handler
+        self.setWindowTitle("Link Git Account")
+        self.setModal(True)
+        self.resize(400, 300)
+        
+        self.init_ui()
+        
+    def init_ui(self):
+        layout = QVBoxLayout()
+        
+        # Username
+        layout.addWidget(QLabel("Git Username:"))
+        self.username_entry = QLineEdit()
+        self.username_entry.setText(self.git_handler.username)
+        layout.addWidget(self.username_entry)
+        
+        # Email
+        layout.addWidget(QLabel("Git Email:"))
+        self.email_entry = QLineEdit()
+        self.email_entry.setText(self.git_handler.email)
+        layout.addWidget(self.email_entry)
+        
+        # Repository Name
+        layout.addWidget(QLabel("Repository Name:"))
+        self.repo_entry = QLineEdit()
+        self.repo_entry.setText(self.git_handler.repo_name)
+        layout.addWidget(self.repo_entry)
+        
+        # Access Token
+        layout.addWidget(QLabel("GitHub Token:"))
+        self.token_entry = QLineEdit()
+        self.token_entry.setEchoMode(QLineEdit.Password)
+        self.token_entry.setText(self.git_handler.token)
+        layout.addWidget(self.token_entry)
+        
+        # Save Button
+        save_btn = QPushButton("Save")
+        save_btn.clicked.connect(self.save_details)
+        layout.addWidget(save_btn, alignment=Qt.AlignCenter)
+        
+        self.setLayout(layout)
+        
+    def save_details(self):
+        username = self.username_entry.text().strip()
+        email = self.email_entry.text().strip()
+        repo_name = self.repo_entry.text().strip()
+        token = self.token_entry.text().strip()
 
+        if not all([username, email, repo_name, token]):
+            QMessageBox.warning(self, "Warning", "All fields are required!")
+            return
+
+        if self.git_handler.save_config(username, email, repo_name, token):
+            self.git_handler.setup_git()
+            self.accept()
+
+
+class GitApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Git Auto-Commit")
+        self.resize(500, 300)
+        
         # Initialize GitHandler
         self.git_handler = GitHandler()
-
-        # Setup styles
-        self.setup_styles()
-
-        # Create Widgets
-        self.create_widgets()
-
-    def setup_styles(self):
-        style = ttk.Style()
-        style.configure('TLabel', font=('Helvetica', 12))
-        style.configure('Title.TLabel', font=('Helvetica', 20, 'bold'))
-        style.configure('Status.TLabel', font=('Helvetica', 12, 'italic'))
-
-    def create_widgets(self):
+        
+        # Create main widget and layout
+        self.main_widget = QWidget()
+        self.setCentralWidget(self.main_widget)
+        
+        self.main_layout = QVBoxLayout()
+        self.main_widget.setLayout(self.main_layout)
+        
+        self.init_ui()
+        
+    def init_ui(self):
         # Title
-        title_frame = ttk.Frame(self.frame)
-        title_frame.pack(fill='x', pady=(0, 10))
-        title_label = ttk.Label(title_frame, text="Git Auto-Commit", style='Title.TLabel')
-        title_label.pack(side='left')
-
+        title_label = QLabel("Git Auto-Commit")
+        title_font = QFont()
+        title_font.setBold(True)
+        title_font.setPointSize(16)
+        title_label.setFont(title_font)
+        title_label.setAlignment(Qt.AlignCenter)
+        self.main_layout.addWidget(title_label)
+        
         # Status Label
-        self.status_label = ttk.Label(self.frame, text="", style='Status.TLabel')
-        self.status_label.pack(pady=10)
-
-        # Update status
+        self.status_label = QLabel()
+        self.status_label.setAlignment(Qt.AlignCenter)
         self.update_status()
-
-        # Buttons frame
-        buttons_frame = ttk.Frame(self.frame)
-        buttons_frame.pack(fill='x', pady=10)
-
-        # Link Account Button
-        link_button = ttk.Button(buttons_frame, text="Link Account", command=self.open_account_popup)
-        link_button.pack(side='left', padx=5)
-
-        # Commit & Push Button
-        push_button = ttk.Button(buttons_frame, text="Commit & Push", 
-                               command=lambda: self.git_handler.commit_and_push())
-        push_button.pack(side='left', padx=5)
-
+        self.main_layout.addWidget(self.status_label)
+        
+        # Buttons
+        buttons_layout = QHBoxLayout()
+        
+        link_btn = QPushButton("Link Account")
+        link_btn.clicked.connect(self.open_account_dialog)
+        buttons_layout.addWidget(link_btn)
+        
+        push_btn = QPushButton("Commit & Push")
+        push_btn.clicked.connect(self.git_handler.commit_and_push)
+        buttons_layout.addWidget(push_btn)
+        
+        self.main_layout.addLayout(buttons_layout)
+        
     def update_status(self):
         """Update status label based on Git configuration"""
         if self.git_handler.username and self.git_handler.repo_name:
             status_text = (f"Linked Account: {self.git_handler.username}\n"
                          f"Repository: {self.git_handler.repo_name}")
-            self.status_label.config(text=status_text)
         else:
-            self.status_label.config(text="No account linked")
-
-    def open_account_popup(self):
-        """Open a pop-up window for Git account setup"""
-        popup = Toplevel(self.parent)
-        popup.title("Link Git Account")
-        popup.geometry("500x400")
-
-        # Create main frame with padding
-        main_frame = ttk.Frame(popup, padding="10")
-        main_frame.pack(fill='both', expand=True)
-
-        # Username
-        ttk.Label(main_frame, text="Git Username:").pack(pady=5)
-        username_entry = ttk.Entry(main_frame, width=50)
-        username_entry.pack(pady=5)
-        username_entry.insert(0, self.git_handler.username)
-
-        # Email
-        ttk.Label(main_frame, text="Git Email:").pack(pady=5)
-        email_entry = ttk.Entry(main_frame, width=50)
-        email_entry.pack(pady=5)
-        email_entry.insert(0, self.git_handler.email)
-
-        # Repository Name
-        ttk.Label(main_frame, text="Repository Name:").pack(pady=5)
-        repo_name_entry = ttk.Entry(main_frame, width=50)
-        repo_name_entry.pack(pady=5)
-        repo_name_entry.insert(0, self.git_handler.repo_name)
-
-        # Access Token
-        ttk.Label(main_frame, text="GitHub Token:").pack(pady=5)
-        token_entry = ttk.Entry(main_frame, show='*', width=50)
-        token_entry.pack(pady=5)
-        token_entry.insert(0, self.git_handler.token)
-
-        def save_details():
-            try:
-                username = username_entry.get().strip()
-                email = email_entry.get().strip()
-                repo_name = repo_name_entry.get().strip()
-                token = token_entry.get().strip()
-
-                if not all([username, email, repo_name, token]):
-                    messagebox.showwarning("Warning", "All fields are required!")
-                    return
+            status_text = "No account linked"
+            
+        self.status_label.setText(status_text)
+        
+    def open_account_dialog(self):
+        """Open the account configuration dialog"""
+        dialog = AccountDialog(self.git_handler, self)
+        if dialog.exec() == QDialog.Accepted:
+            self.update_status()
 
 
-                self.git_handler.save_config('', '', '', '')
-                self.git_handler.save_config(username, email, repo_name, token)
-                self.git_handler.setup_git()
-                self.update_status()
-                popup.destroy()
-                messagebox.showinfo("Success", "Account linked successfully!")
-                
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to save configuration: {e}")
-
-        # Save Button
-        ttk.Button(main_frame, text="Save", command=save_details).pack(pady=20)

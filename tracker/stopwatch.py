@@ -1,18 +1,19 @@
-import tkinter as tk
-from tkinter import ttk , messagebox
+import sys
 import time
 import cv2
-from PIL import Image, ImageTk ,ImageDraw
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QFrame, QHBoxLayout, QGroupBox, QListWidget, QListWidgetItem, QMessageBox
+
 import mediapipe as mp
 
-
-
-class StopwatchApp:
-    def __init__(self, root):
-        self.parent = root
+class StopwatchApp(QWidget):
+    def __init__(self):
+        super().__init__()
 
         # Stopwatch variables
         self.running = False
+        self.color_mode = "RGB"
         self.start_time = 0
         self.elapsed_time = 0
         self.lap_times = []
@@ -25,97 +26,95 @@ class StopwatchApp:
         self.face_detected = False
         self.mp_face_detection = mp.solutions.face_detection
         self.mp_drawing = mp.solutions.drawing_utils
-        self.face_detection = self.mp_face_detection.FaceDetection(min_detection_confidence=0.5)
+        self.face_detection = self.mp_face_detection.FaceDetection(min_detection_confidence=0.7)
 
-
-        # Create the GUI
+        # Setup UI
         self.setup_ui()
-
         self.initialize_camera()
 
+        # Timer for stopwatch update
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_timer_display)
+        self.timer.start(100)  # 100 ms timer for updating the stopwatch
 
     def setup_ui(self):
         """Setup the entire user interface."""
-        self.frame = tk.Frame(self.parent , width=25)
-        self.frame.pack(side="left", fill="both", expand=False, padx=10, pady=10)
+        self.setWindowTitle("Stopwatch App")
+        self.setGeometry(100, 100, 800, 600)
 
-        title_frame = ttk.Frame(self.frame)
-        title_frame.pack(fill='x', pady=(0, 10))
-        title_label = ttk.Label(title_frame, text="Stopwatch", font=('Helvetica', 20, 'bold'))
-        title_label.pack(side='left')
+        main_layout = QVBoxLayout(self)
 
-        # Timer display
-        self.label = tk.Label(self.frame, text="00:00:00", font=("Helvetica", 48))
-        self.label.pack(pady=10)
+        # Stopwatch title and timer display
+        self.title_label = QLabel("Stopwatch", self)
+        self.title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
+        self.timer_label = QLabel("00:00:00", self)
+        self.timer_label.setStyleSheet("font-size: 48px;")
 
-        # Control buttons
-        self.frame_2  = ttk.LabelFrame(self.frame , text='Controls')
-        self.frame_2.pack(fill='x' , padx=5 , pady=5)
+        main_layout.addWidget(self.title_label)
+        main_layout.addWidget(self.timer_label)
 
-        self.lap_frame = ttk.LabelFrame(self.frame_2 , text="Lap Records")
-        self.lap_frame.pack(side='left' , fill= 'none' , padx=10 , pady=5)
+        # Controls (Start, Stop, Reset, Lap)
+        control_group = QGroupBox("Controls", self)
+        control_layout = QHBoxLayout(control_group)
 
-        self.button_frame = ttk.Frame(self.frame_2)
-        self.button_frame.pack(side='right',pady=5, padx=10)
+        self.start_button = QPushButton("Start", self)
+        self.stop_button = QPushButton("Stop", self)
+        self.reset_button = QPushButton("Reset", self)
+        self.lap_button = QPushButton("Lap", self)
 
-        self.button_frame1 = ttk.Frame(self.button_frame)
-        self.button_frame1.pack(pady=5)
+        self.start_button.clicked.connect(self.start)
+        self.stop_button.clicked.connect(self.stop)
+        self.reset_button.clicked.connect(self.reset)
+        self.lap_button.clicked.connect(self.record_lap)
 
-        self.button_frame2 = ttk.Frame(self.button_frame)
-        self.button_frame2.pack(pady=5)
+        control_layout.addWidget(self.start_button)
+        control_layout.addWidget(self.stop_button)
+        control_layout.addWidget(self.reset_button)
+        control_layout.addWidget(self.lap_button)
 
-        self.start_button = ttk.Button(self.button_frame1, text="Start", command=self.start)
-        self.start_button.pack(side="left", padx=5)
-        self.stop_button = ttk.Button(self.button_frame1, text="Stop", command=self.stop)
-        self.stop_button.pack(side="right", padx=5)
-        self.reset_button = ttk.Button(self.button_frame2, text="Reset", command=self.reset)
-        self.reset_button.pack(side="left", padx=5)
-        self.lap_button = ttk.Button(self.button_frame2, text="Lap", command=self.record_lap)
-        self.lap_button.pack(side="right", padx=5)
+        main_layout.addWidget(control_group)
 
-        # Lap display
-        
-        self.lap_listbox = tk.Listbox(self.lap_frame, font=("Helvetica", 14), width=15 , height=5)
-        self.lap_listbox.pack(pady=10 )
+        # Lap records
+        self.lap_list_widget = QListWidget(self)
+        main_layout.addWidget(self.lap_list_widget)
+
+        # Activity Tracker (Key presses and mouse clicks)
+        activity_group = QGroupBox("Activity Tracker", self)
+        activity_layout = QHBoxLayout(activity_group)
+
+        self.key_count_label = QLabel(f"Keys: {self.key_count}", self)
+        self.click_count_label = QLabel(f"Clicks: {self.click_count}", self)
+
+        activity_layout.addWidget(self.key_count_label)
+        activity_layout.addWidget(self.click_count_label)
+
+        main_layout.addWidget(activity_group)
+
+        # Camera Feed
+        self.cam_label = QLabel("Start Camera", self)
+        self.cam_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.cam_label)
+
+        self.camera_controls = QHBoxLayout()
+        self.start_camera_button = QPushButton("Start Camera", self)
+        self.stop_camera_button = QPushButton("Stop Camera", self)
+        self.toggle_color_button = QPushButton("Toggle Color Mode", self)
+
+        self.start_camera_button.clicked.connect(self.start_camera)
+        self.stop_camera_button.clicked.connect(self.stop_camera)
+        self.toggle_color_button.clicked.connect(self.toggle_color_mode)
 
 
-        # Activity counters
-        self.counter_frame = ttk.LabelFrame(self.frame , text='Activity Tracker')
-        self.counter_frame.pack(pady=5 , fill='x')
-        self.key_count_label = ttk.Label(self.counter_frame, text=f"Keys: {self.key_count}", font=("Helvetica", 16))
-        self.key_count_label.pack(side="left", padx=10)
-        self.click_count_label = ttk.Label(self.counter_frame, text=f"Clicks: {self.click_count}", font=("Helvetica", 16))
-        self.click_count_label.pack(side="left", padx=10)
+        self.camera_controls.addWidget(self.start_camera_button)
+        self.camera_controls.addWidget(self.stop_camera_button)
+        self.camera_controls.addWidget(self.toggle_color_button)
 
-        # Video feed frame
-        self.cam_frame = ttk.LabelFrame(self.frame, text="Camera")
-        self.cam_frame.pack(fill="both", expand=False)
+        main_layout.addLayout(self.camera_controls)
 
-        # Inner frame to contain video feed
-        self.video_frame = ttk.Label(self.cam_frame, text="Start the Camera", font=("Helvetica", 14))
-        self.video_frame.pack(fill="both", expand=False)
-
-        # Toggle camera button
-        self.camera_button_frame = ttk.Frame(self.cam_frame)
-        self.camera_button_frame.pack(fill='x' , side='bottom' , pady=5)
-
-        self.start_camera_button = ttk.Button(self.camera_button_frame,
-                                        text='Start Camera',
-                                        command=self.start_camera)
-        self.start_camera_button.pack(pady=5, side='left')
-
-        self.stop_camera_button = ttk.Button(self.camera_button_frame,
-                                        text='Stop Camera',
-                                        command=self.stop_camera)
-        self.stop_camera_button.pack(pady=5, side='right')
-
-        # Schedule updates
-        self.update_timer_display()
-        self.update_counts()
-        self.update_camera_feed()
+        self.setLayout(main_layout)
 
     def initialize_camera(self):
-        """Check if the camera is available and initialize."""
+        """Initialize the camera."""
         if self.cap is None:
             try:
                 self.cap = cv2.VideoCapture(0)
@@ -123,39 +122,50 @@ class StopwatchApp:
                     raise ValueError("Camera not accessible.")
             except Exception:
                 self.cap = None
-                self.video_frame.config(text="Camera not available")
-                self.start_camera_button.config(state="disabled")
-                self.stop_camera_button.config(state='disabled')
-
+                self.cam_label.setText("Camera not available")
+                self.start_camera_button.setDisabled(True)
+                self.stop_camera_button.setDisabled(True)
 
     def start_camera(self):
-        """Start the camera and initialize the video feed."""
+        """Start the camera feed."""
         try:
             self.cap = cv2.VideoCapture(0)
+            if self.cap.isOpened():
+                self.start_camera_button.setDisabled(True)
+                self.stop_camera_button.setEnabled(True)
+                self.update_camera_feed()
         except Exception:
-            print("error camera is not starting")
-        if self.cap.isOpened():
-            self.start_camera_button.config(state='disabled')
-            self.stop_camera_button.config(state='normal')
-            self.update_camera_feed()
+            print("Camera error")
 
     def stop_camera(self):
-        """Stop the camera and display a placeholder."""
+        """Stop the camera feed."""
         if self.cap and self.cap.isOpened():
             self.cap.release()
             self.cap = None
-        self.start_camera_button.config(state='normal')
-        self.stop_camera_button.config(state='disabled')
-        self.video_frame.imgtk = None
-        self.video_frame.config(image=None)
-        # self.video_frame.config(text="Camera Feed")
+        self.start_camera_button.setEnabled(True)
+        self.stop_camera_button.setDisabled(True)
+        self.cam_label.clear()
+
+    def toggle_color_mode(self):
+            """Toggle between RGB and Grayscale mode."""
+            if self.color_mode == "RGB":
+                self.color_mode = "Grayscale"
+            else:
+                self.color_mode = "RGB"
+            print(f"Color Mode changed to: {self.color_mode}")
 
     def update_camera_feed(self):
-        """Update the video feed and detect faces."""
+        """Update the video feed."""
         if self.cap and self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # Convert the frame based on the color mode selected
+                if self.color_mode == "RGB":
+                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                else:
+                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
+
+                # Perform face detection
                 results = self.face_detection.process(rgb_frame)
 
                 if results.detections:
@@ -168,38 +178,46 @@ class StopwatchApp:
                 else:
                     self.face_detected = False
 
+                # Resize the frame and convert it to QImage for display
                 frame = cv2.resize(frame, (300, 200))
-                img = ImageTk.PhotoImage(Image.fromarray(frame))
-                self.video_frame.imgtk = img
-                self.video_frame.config(image=img)
+                if self.color_mode == "RGB":
+                    qt_image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+                else:
+                    qt_image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_Grayscale8)  # Grayscale format
 
+                # Display the image
+                pixmap = QPixmap(qt_image)
+                self.cam_label.setPixmap(pixmap)
+
+            # Start or stop the stopwatch based on face detection
             if self.face_detected:
                 self.start()
             else:
                 self.stop()
 
+        # Update the camera feed every 50 ms
         if self.cap and self.cap.isOpened():
-            self.parent.after(50, self.update_camera_feed)
+            QTimer.singleShot(50, self.update_camera_feed)
 
     def start(self):
         """Start the stopwatch."""
         if not self.running:
             self.start_time = time.perf_counter() - self.elapsed_time
             self.running = True
-            self.update_timer_display()  # Start updating the timer display
 
     def stop(self):
         """Stop the stopwatch."""
         self.running = False
 
     def reset(self):
-        """Reset the stopwatch and clear lap times."""
-        if messagebox.askyesno("Confirmation " , 'Do you want to Reset ? '):
+        """Reset the stopwatch."""
+        reply = QMessageBox.question(self, "Confirmation", "Do you want to reset?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
             self.running = False
             self.elapsed_time = 0
             self.lap_times.clear()
             self.update_lap_display()
-            self.label.config(text="00:00:00")
+            self.timer_label.setText("00:00:00")
 
     def record_lap(self):
         """Record a lap time."""
@@ -207,25 +225,24 @@ class StopwatchApp:
             lap_time = self.elapsed_time - self.last_time if self.lap_times else self.elapsed_time
             self.last_time = self.elapsed_time
             self.lap_times.append(lap_time)
-            # Limit to the latest 5 laps
             if len(self.lap_times) > 5:
                 self.lap_times.pop(0)
             self.update_lap_display()
 
     def update_lap_display(self):
-        """Update the lap records in the listbox."""
-        self.lap_listbox.delete(0, tk.END)  # Clear current list
+        """Update lap records."""
+        self.lap_list_widget.clear()
         for i, lap in enumerate(self.lap_times):
             formatted_time = self.format_time(lap)
-            self.lap_listbox.insert(tk.END, f"Lap {i + 1}: {formatted_time}")
+            self.lap_list_widget.addItem(f"Lap {i + 1}: {formatted_time}")
 
     def update_counts(self):
-        """Update key and click counts every second."""
+        """Update key and click counts."""
         from .activity_tracker import get_count
         self.key_count, self.click_count = get_count()
-        self.key_count_label.config(text=f"Keys: {self.key_count}")
-        self.click_count_label.config(text=f"Clicks: {self.click_count}")
-        self.parent.after(1000, self.update_counts)  # Update every second
+        self.key_count_label.setText(f"Keys: {self.key_count}")
+        self.click_count_label.setText(f"Clicks: {self.click_count}")
+        QTimer.singleShot(1000, self.update_counts)  # Update every second
 
     def update_timer_display(self):
         """Update the timer display."""
@@ -234,19 +251,24 @@ class StopwatchApp:
             hours, remainder = divmod(self.elapsed_time, 3600)
             minutes, seconds = divmod(remainder, 60)
             time_format = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
-            self.label.config(text=time_format)
-        self.parent.after(100, self.update_timer_display)  # Update every 100 ms
+            self.timer_label.setText(time_format)
 
     def format_time(self, seconds):
         """Format time in 'mm:ss' format."""
         minutes, seconds = divmod(seconds, 60)
         return f"{int(minutes):02}:{int(seconds):02}"
-    
+
     def export_vars(self):
-        res = [self.elapsed_time , self.key_count , self.click_count]
-        # print(res)
-        return res
-    
+        """Export relevant variables."""
+        return [self.elapsed_time, self.key_count, self.click_count]
+
     def __del__(self):
+        """Release the camera on cleanup."""
         if self.cap:
             self.cap.release()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = StopwatchApp()
+    window.show()
+    sys.exit(app.exec())
