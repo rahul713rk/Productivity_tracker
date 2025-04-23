@@ -1,56 +1,44 @@
-import os
-from pathlib import Path
+import sys
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QLabel, QPushButton,
+    QHBoxLayout, QGroupBox, QListWidget, QMessageBox
+)
+from view.stopwatch_view import StopwatchView
+from controller.activivty_tracker import start_tracking, stop_tracking
 
-# Step 1: Define the desktop entry content
-def create_desktop_entry(base_dir):
-    # Get the absolute paths for app.py and icon.svg
-    app_path = os.path.join(base_dir, "app.py")
-    icon_path = os.path.join(base_dir, "resources/others/icon.svg")
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)    
+#     window = StopwatchView()
+#     start_tracking(window.controller)
+#     window.show()
+#     app.aboutToQuit.connect(stop_tracking)
+#     sys.exit(app.exec())
 
-    desktop_entry = f"""[Desktop Entry]
-Version=4.0
-Type=Application
-Name=Productivity Tracker
-Exec=python3 {app_path}
-Icon={icon_path}
-Terminal=true
-Categories=Utility;Application;
-"""
-    return desktop_entry
 
-# Step 2: Write the desktop entry to a .desktop file
-def generate_desktop_file(base_dir):
-    desktop_filename = "ProductivityTracker.desktop"
-    with open(desktop_filename, "w") as file:
-        file.write(create_desktop_entry(base_dir))
-    return desktop_filename
 
-# Step 3: Make the file executable
-def make_executable(file_path):
-    os.chmod(file_path, 0o755)
-
-# Step 4: Move the file to the application menu
-def move_to_applications(file_path):
-    applications_dir = os.path.join(str(Path.home()), ".local/share/applications")
-    if not os.path.exists(applications_dir):
-        os.makedirs(applications_dir)
-    os.rename(file_path, os.path.join(applications_dir, file_path))
-
-# Main function to run all steps
-def main():
-    # Get the current directory where this script is being run from
-    base_dir = os.path.abspath(os.path.dirname(__file__))
-
-    # Generate the .desktop file
-    desktop_file = generate_desktop_file(base_dir)
-
-    # Make the .desktop file executable
-    make_executable(desktop_file)
-
-    # Move the .desktop file to the application menu
-    move_to_applications(desktop_file)
-
-    print("Shortcut created and moved to Application Menu successfully.")
+from PySide6.QtWidgets import QApplication
+from view.todo_view import TodoView
+from controller.todo_helper import TodoHelper
+# from tracker.todo import Todo
 
 if __name__ == "__main__":
-    main()
+    app = QApplication([])
+    
+    main_window = QWidget()
+    main_window.setWindowTitle("Productivity Tracker")
+    tab1 = QHBoxLayout(main_window)
+    stopwatch = StopwatchView()
+    view = TodoView()
+    start_tracking(stopwatch.controller)
+
+    tab1.addWidget(stopwatch)
+    tab1.addWidget(view)
+
+    main_window.show()
+
+    app.aboutToQuit.connect(stop_tracking)
+    app.exec()
+
+    # controller.close_resources()
