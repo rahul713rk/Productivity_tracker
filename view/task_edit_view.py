@@ -47,7 +47,7 @@ class Edit_Task(QDialog):
     def setup_label(self, text):
         """Setup a label with the given text"""
         label = QLabel(text)
-        StyleUtils.style_tooltip(label)
+        StyleUtils.style_lable(label)
         return label
         
     def setup_buttons(self):

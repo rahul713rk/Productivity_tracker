@@ -8,7 +8,7 @@ def create_task_tree():
     tree = QTreeView()
 
     tree.setModel(QStandardItemModel(0, 7, tree))
-    tree.model().setHorizontalHeaderLabels(['Title', 'Category', 'Priority', 'Status','','' ,''])
+    tree.model().setHorizontalHeaderLabels(['Title', 'Category', 'Priority', 'Status','','',''])
 
     # Tree configuration
     tree.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -29,5 +29,6 @@ def create_task_tree():
     header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
     header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
     header.setSectionResizeMode(6, QHeaderView.ResizeToContents)
+    header.setStretchLastSection(False)
     header.setSectionsClickable(True) 
     return tree

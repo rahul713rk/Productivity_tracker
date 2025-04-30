@@ -19,9 +19,6 @@ class StopwatchView(QWidget):
 
     def setup_ui(self):
         """Setup the entire user interface."""
-        self.setWindowTitle("Stopwatch App")
-        self.setGeometry(100, 100, 800, 600)
-
         main_layout = QVBoxLayout(self)
 
         # Stopwatch title and timer display

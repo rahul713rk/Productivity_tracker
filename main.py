@@ -1,44 +1,56 @@
-import sys
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QImage, QPixmap
-from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QLabel, QPushButton,
-    QHBoxLayout, QGroupBox, QListWidget, QMessageBox
-)
+from PySide6.QtWidgets import (QApplication, QMainWindow, 
+                               QTabWidget, QWidget, QLabel, 
+                               QHBoxLayout , QScrollArea)
+
 from view.stopwatch_view import StopwatchView
-from controller.activivty_tracker import start_tracking, stop_tracking
-
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)    
-#     window = StopwatchView()
-#     start_tracking(window.controller)
-#     window.show()
-#     app.aboutToQuit.connect(stop_tracking)
-#     sys.exit(app.exec())
-
-
-
-from PySide6.QtWidgets import QApplication
 from view.todo_view import TodoView
-from controller.todo_helper import TodoHelper
-# from tracker.todo import Todo
+# from view.dataset_view import DataViewerApp
+from view.dataset_view import DataViewerApp
+# from view.git_view import GitView
 
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        
+        self.setWindowTitle("Productivity Tracker")
+        # self.setGeometry(100, 100, 400, 300)
+        
+        # Create the tab widget
+        self.StopwatchView = StopwatchView()
+        self.TodoView = TodoView()
+        self.DataViewerView = DataViewerApp()
+        # self.GitView = GitView()
+
+
+        tabs = QTabWidget()
+
+        
+        tab2 = self.DataViewerView
+        # tab3 = self.GitView
+
+        # Add tabs to the tab widget
+        tabs.addTab(self.tab1_setup(), "Home")
+        tabs.addTab(tab2, "Dataset")
+        # tabs.addTab(tab3, "Git")
+        
+        # Set the central widget
+        self.setCentralWidget(tabs)
+    
+
+    def tab1_setup(self):
+        """Setup the first tab with Stopwatch and Todo views."""
+        tab1 = QWidget()
+        tab1_layout = QHBoxLayout(tab1)
+        
+        # Add Stopwatch and Todo views to the layout
+        tab1_layout.addWidget(self.StopwatchView)
+        tab1_layout.addWidget(self.TodoView)
+        self.setCentralWidget(tab1)
+        return tab1
+    
+    
 if __name__ == "__main__":
     app = QApplication([])
-    
-    main_window = QWidget()
-    main_window.setWindowTitle("Productivity Tracker")
-    tab1 = QHBoxLayout(main_window)
-    stopwatch = StopwatchView()
-    view = TodoView()
-    start_tracking(stopwatch.controller)
-
-    tab1.addWidget(stopwatch)
-    tab1.addWidget(view)
-
-    main_window.show()
-
-    app.aboutToQuit.connect(stop_tracking)
+    window = MainWindow()
+    window.show()
     app.exec()
-
-    # controller.close_resources()
