@@ -4,13 +4,10 @@ from .database import Database
 
 
 class MarkdownHandler:
-    def __init__(self, db=None, markdown_path="./resources/db/Daily_update/README.md"):
+    def __init__(self, db=None, markdown_path="./assets/resource/Daily_Update/README.md"):
         # Use an existing Database object or create a new one
         self.db = db if db else Database()
         
-        # Set the directory and filename for the markdown file
-        self.markdown_dir = os.path.dirname(markdown_path)
-        os.makedirs(self.markdown_dir, exist_ok=True)
         self.filename = markdown_path
     
     def markdown_helper(self):

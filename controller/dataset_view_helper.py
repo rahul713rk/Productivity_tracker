@@ -275,8 +275,8 @@ class EditTaskDialog(QDialog):
 class DatabaseManager:
     """Handles all database operations."""
     
-    def __init__(self, db_path: str = './resources/db/main.db'):
-        self.db_path = os.path.abspath(db_path)
+    def __init__(self, db_path: str = './assets/resource/data/main.db'):
+        self.db_path = db_path
         
     def get_tables(self) -> List[str]:
         """Get list of all tables in the database."""

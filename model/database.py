@@ -1,15 +1,11 @@
 import sqlite3
 from datetime import datetime
-import os
 
 
 class Database:
     def __init__(self):
         
-        abs_path = os.path.abspath("./resources/db")
-        os.makedirs(abs_path, exist_ok=True)
-        filename = os.path.join(abs_path, "main.db")
-            
+        filename = './assets/resource/data/main.db'
         self.conn = sqlite3.connect(filename)
         self.cursor = self.conn.cursor()
         self.create_tables()
