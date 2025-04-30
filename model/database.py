@@ -79,8 +79,8 @@ class Database:
 
     def update_task_status(self, task_id, new_status):
         completed_date = (
-            datetime.now().date()
-            if new_status == "Done"
+            datetime.now().date().isoformat()
+            if new_status == "Completed"
             else None
         )
         self.cursor.execute(

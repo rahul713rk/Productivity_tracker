@@ -1,7 +1,7 @@
 
 from PySide6.QtWidgets import (QPushButton, QLabel, QLineEdit, QTextEdit, 
                               QComboBox, QCheckBox, QRadioButton, QSlider,
-                              QProgressBar, QListWidget, QGroupBox , QAbstractItemView)
+                              QProgressBar, QListWidget, QGroupBox , QAbstractItemView , QDateEdit)
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon ,  QColor, QFont
 
@@ -125,7 +125,7 @@ class StyleUtils:
         """)
 
     @staticmethod
-    def style_icon_button(button: QPushButton ,icon : QIcon, icon_size=16) -> None:
+    def style_icon_button(button: QPushButton ,icon : QIcon, icon_size=14) -> None:
         button.setStyleSheet("""
             QPushButton {
                 background-color: transparent;
@@ -317,12 +317,12 @@ class StyleUtils:
         """)
 
     @staticmethod
-    def style_tooltip(label: QLabel) -> None:
+    def style_lable(label: QLabel) -> None:
         """
-        Styles a label as a tooltip with subtle shadow
+        Styles a label with subtle shadow
         
         Args:
-            label: QLabel instance to style as tooltip
+            label: QLabel instance to style 
         """
         label.setStyleSheet("""
             QLabel {
@@ -353,6 +353,9 @@ class StyleUtils:
             QLabel {{
                 background-color: {color};
                 color: white;
+                border: 1px solid #BDBDBD;
+                border-radius: 10px;
+                margin: 2px;
                 padding: 2px 8px;
                 border-radius: 10px;
                 font-size: 12px;
@@ -740,4 +743,33 @@ class StyleUtils:
             }
             """)
 
-            
+    def style_date_edit(date_edit: QDateEdit) -> None:
+        date_edit.setStyleSheet("""
+            QDateEdit {
+                border: 2px solid crimson;
+                border-radius: 10px;
+                padding: 4px 6px;
+                background-color: white;
+                color : black;
+                selection-background-color: #0078d7;
+                selection-color: blue;
+            }
+            QDateEdit::drop-down {
+                color: black;
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 20px;
+                border-left: 1px solid #ccc;
+            }
+            QDateEdit::down-arrow {
+                image: url(./assets/images/icons/calendar.png);
+                color: black;
+                width: 24px;
+                height: 24px;
+            }
+            QDateEdit:disabled {
+                background-color: black;
+                color: white;
+                                }
+        """)
+

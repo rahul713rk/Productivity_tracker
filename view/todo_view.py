@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineE
                                QStyledItemDelegate, QAbstractItemView, QHeaderView, QDialog ,
                                  QGroupBox , QFrame , QStyle )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QStandardItemModel, QStandardItem, QAction, QIcon
+from PySide6.QtGui import QStandardItemModel, QStandardItem, QAction, QIcon , QColor
 from view.tree_view import create_task_tree
 from controller.todo_helper import TodoHelper
 from view.task_edit_view import Edit_Task
@@ -23,8 +23,6 @@ class TodoView(QWidget):
     def setup_ui(self):
         """Setup the main user interface"""
         self.layout = QVBoxLayout(self)
-        # self.setMinimumSize(800, 600)
-
         # Title
         todo_controller_group = QGroupBox("Todo List")
         StyleUtils.style_groupbox(todo_controller_group)
@@ -121,9 +119,6 @@ class TodoView(QWidget):
 
         tree = create_task_tree()
         group_layout.addWidget(tree)
-
-        StyleUtils.apply_tree_style(tree, theme='dark')
-        StyleUtils.highlight_priority_items(tree)
         
         self.task_layout.addWidget(group, stretch=stretch)
 
@@ -131,7 +126,7 @@ class TodoView(QWidget):
         if view_type == "active":
             self.main_tree = tree
         else:
-            self.done_tree = tree
+            self.Completed_tree = tree
 
     def create_fancy_header(self, title: str, icon_type: str) -> QWidget:
         """Create a fancy header with an icon and title"""
@@ -151,7 +146,7 @@ class TodoView(QWidget):
 
     def connect_context_menus(self):
         """Connect context menus to both task views"""
-        for tree in [self.main_tree, self.done_tree]:
+        for tree in [self.main_tree, self.Completed_tree]:
             tree.setContextMenuPolicy(Qt.CustomContextMenu)
             tree.customContextMenuRequested.connect(self.show_context_menu)
 
@@ -171,8 +166,6 @@ class TodoView(QWidget):
         # Add buttons
         buttons = [
             ("Add Task", self.add_task, "Add a new task"),
-            # ("Delete Task", self.delete_task, "Delete selected task"),
-            # ("Mark Complete", lambda: self.change_status("Done"), "Mark task as complete"),
             ("Add Category", self.add_category, "Add a new category"),
             ("Delete Category", self.delete_category, "Delete selected category"),
             ("Refresh", self.load_tasks, "Refresh task list")
@@ -197,7 +190,7 @@ class TodoView(QWidget):
         status_actions = [
             ("Set Pending", "Pending"),
             ("Set Working", "Working"),
-            ("Set Done", "Done")
+            ("Set Completed", "Completed")
         ]
 
         for text, status in status_actions:
@@ -219,7 +212,7 @@ class TodoView(QWidget):
 
     def edit_task(self):
         """Edit the selected task"""
-        tree = self.main_tree if self.main_tree.selectionModel().hasSelection() else self.done_tree
+        tree = self.main_tree if self.main_tree.selectionModel().hasSelection() else self.Completed_tree
         selected_index = tree.selectionModel().selectedRows()[0]
         model = tree.model()
         
@@ -282,7 +275,7 @@ class TodoView(QWidget):
 
     def change_status(self, new_status):
         """Change status of the selected task"""
-        tree = self.main_tree if self.main_tree.selectionModel().hasSelection() else self.done_tree
+        tree = self.main_tree if self.main_tree.selectionModel().hasSelection() else self.Completed_tree
         selected_index = tree.selectionModel().selectedRows()[0]
         task_id = tree.model().item(selected_index.row(), 0).data(Qt.UserRole)
 
@@ -292,7 +285,7 @@ class TodoView(QWidget):
     def delete_task(self ,task_id = None):
         """Delete the selected task"""
         if task_id is None:
-            tree = self.main_tree if self.main_tree.selectionModel().hasSelection() else self.done_tree
+            tree = self.main_tree if self.main_tree.selectionModel().hasSelection() else self.Completed_tree
             selected_index = tree.selectionModel().selectedRows()[0]
             task_id = tree.model().item(selected_index.row(), 0).data(Qt.UserRole)
 
@@ -327,14 +320,14 @@ class TodoView(QWidget):
         """Load tasks from database into the views"""
         # Clear current views
         self.main_tree.model().removeRows(0, self.main_tree.model().rowCount())
-        self.done_tree.model().removeRows(0, self.done_tree.model().rowCount())
+        self.Completed_tree.model().removeRows(0, self.Completed_tree.model().rowCount())
 
         # Load tasks from database
         tasks = self.helper.get_today_tasks()
 
         for task in tasks:
             task_id, title, category, priority, status, *rest = task
-            model = self.main_tree.model() if status != 'Done' else self.done_tree.model()
+            model = self.main_tree.model() if status != 'Completed' else self.Completed_tree.model()
 
             # Create items for each column (without buttons)
             items = [
@@ -351,10 +344,19 @@ class TodoView(QWidget):
             items[0].setData(task_id, Qt.UserRole)
 
             # Set priority-based coloring
-            if priority == "High":
-                items[0].setForeground(Qt.red)
-            elif priority == "Medium":
-                items[0].setForeground(Qt.darkYellow)
+            for i in range(0,4):
+                if priority == "High":
+                    items[i].setForeground(Qt.black)
+                    items[i].setBackground(QColor("#e57373"))  # Soft red 
+                elif priority == "Medium":
+                    items[i].setForeground(Qt.black)
+                    items[i].setBackground(QColor("#fff176"))  # Soft yellow
+                elif priority == "Low":
+                    items[i].setForeground(Qt.black)
+                    items[i].setBackground(QColor("#aed581"))  # Soft green
+                
+                if i == 0:
+                    items[i].setToolTip(title)
 
             # Add row to model
             model.appendRow(items)
@@ -363,7 +365,7 @@ class TodoView(QWidget):
             row = model.rowCount() - 1
             
             # Add buttons to the view using setIndexWidget
-            tree = self.main_tree if status != 'Done' else self.done_tree
+            tree = self.main_tree if status != 'Completed' else self.Completed_tree
             
             # Delete button
             delete_button = QPushButton()
@@ -373,10 +375,10 @@ class TodoView(QWidget):
             tree.setIndexWidget(model.index(row, 4), delete_button)
 
             # Complete/Pending button
-            if status != 'Done':
+            if status != 'Completed':
                 complete_button = QPushButton()
                 StyleUtils.style_icon_button(complete_button, QIcon("./assets/images/icons/complete.png"))
-                complete_button.clicked.connect(lambda _, id=task_id: self.change_status("Done"))
+                complete_button.clicked.connect(lambda _, id=task_id: self.change_status("Completed"))
                 complete_button.setToolTip("Mark as Complete")
                 tree.setIndexWidget(model.index(row, 5), complete_button)
             else:
