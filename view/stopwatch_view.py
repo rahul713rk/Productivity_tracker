@@ -145,8 +145,4 @@ class StopwatchView(QWidget):
         self.key_count_label.setText(f"Keys: {key_count}")
         self.click_count_label.setText(f"Clicks: {click_count}")
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = StopwatchView()
-    window.show()
-    sys.exit(app.exec())
+

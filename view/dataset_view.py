@@ -33,7 +33,7 @@ class DataViewerApp(QMainWindow):
         self.df = pd.DataFrame()
         self.original_df = pd.DataFrame()
         self.date_columns: List[str] = []
-        self.graph_file_path = os.path.abspath('./resources/db/graph.html')
+        self.graph_file_path = './assets/resource/data/graph.html'
         self.db_manager = DatabaseManager()
 
     def _setup_ui(self):
