@@ -106,6 +106,15 @@ bash create_appimage.sh
 ```
 This downloads `appimagetool` (if missing) and packages the application into a single `.AppImage` file.
 
+### Create a DEB Package (Debian/Ubuntu)
+```bash
+bash create_deb.sh
+```
+This creates a `.deb` installer. You can install it using:
+```bash
+sudo dpkg -i productivity-tracker_1.0_amd64.deb
+```
+
 ---
 
 ## 📂 Project Structure

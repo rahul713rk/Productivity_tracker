@@ -105,3 +105,4 @@ assets/resource/Daily_Update/*.md
 .snapcraft/
 snap/local/
 *.snap
+*.deb
