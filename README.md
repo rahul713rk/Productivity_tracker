@@ -9,8 +9,27 @@
 
 ---
 
-### [📥 Download Latest AppImage (Linux)](https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.0/ProductivityTracker-x86_64.AppImage)
-*Portable, standalone, and no installation required.*
+### 📥 Download Latest Release
+
+| Package | Type | Link | Description |
+| :--- | :--- | :--- | :--- |
+| **AppImage** | Portable | [**Download**](https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.0/ProductivityTracker-x86_64.AppImage) | Run instantly. No install needed. |
+| **DEB** | Installer | [**Download**](https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.0/productivity-tracker_1.0_amd64.deb) | Native install for Ubuntu/Debian. |
+
+### 💿 Installation Guide
+
+**Option 1: AppImage (Recommended)**
+```bash
+chmod +x ProductivityTracker-x86_64.AppImage
+./ProductivityTracker-x86_64.AppImage
+```
+
+**Option 2: DEB Package**
+```bash
+sudo dpkg -i productivity-tracker_1.0_amd64.deb
+# If you get dependency errors:
+sudo apt-get install -f
+```
 
 ---
 

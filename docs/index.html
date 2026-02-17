@@ -30,8 +30,13 @@
                     class="btn btn-primary">
                     <i class="fab fa-linux"></i> Download AppImage
                 </a>
+                <a href="https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.0/productivity-tracker_1.0_amd64.deb"
+                    class="btn btn-outline"
+                    style="background: transparent; border-color: var(--secondary); color: var(--secondary);">
+                    <i class="fas fa-box"></i> Download .DEB
+                </a>
                 <a href="https://github.com/rahul713rk/Productivity_tracker" class="btn btn-outline">
-                    <i class="fab fa-github"></i> View Source
+                    <i class="fab fa-github"></i> Source Code
                 </a>
             </div>
         </div>
@@ -54,6 +59,54 @@
                 <div class="feature-icon"><i class="fas fa-sync"></i></div>
                 <h3>Cloud Auto-Sync</h3>
                 <p>Automatically push your daily productivity logs to GitHub to keep your contribution graph green.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="container"
+        style="padding: 4rem 0; background: rgba(30, 41, 59, 0.5); border-radius: 20px; margin-top: 4rem;">
+        <div class="section-header" style="margin-bottom: 2rem;">
+            <h2>Installation Guide</h2>
+            <p>Choose the format that works best for you.</p>
+        </div>
+
+        <style>
+            .code-block {
+                background: #0f172a;
+                padding: 1.5rem;
+                border-radius: 12px;
+                font-family: monospace;
+                color: #e2e8f0;
+                margin-bottom: 2rem;
+                border: 1px solid #334155;
+                position: relative;
+            }
+
+            .code-label {
+                position: absolute;
+                top: -12px;
+                left: 20px;
+                background: var(--primary);
+                color: white;
+                padding: 2px 10px;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                font-weight: bold;
+            }
+        </style>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+            <div class="code-block">
+                <span class="code-label">AppImage (Portable)</span>
+                chmod +x ProductivityTracker-x86_64.AppImage<br>
+                ./ProductivityTracker-x86_64.AppImage
+            </div>
+
+            <div class="code-block">
+                <span class="code-label">DEB Package (Debian/Ubuntu)</span>
+                sudo dpkg -i productivity-tracker_1.0_amd64.deb<br>
+                <span style="color: #64748b;"># If dependencies are missing:</span><br>
+                sudo apt-get install -f
             </div>
         </div>
     </section>
