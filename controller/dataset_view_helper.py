@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QDate, QAbstractTableModel, QModelIndex
 from view.style import StyleUtils
+from controller.path_manager import path_manager
 
 
 class DataTreeModel(QAbstractTableModel):
@@ -204,7 +205,7 @@ class EditTaskDialog(QDialog):
     def _load_categories(self, current_category: str) -> None:
         """Load categories from database and select current one."""
         try:
-            with sqlite3.connect('./resources/db/main.db') as conn:
+            with sqlite3.connect(path_manager.get_path('db')) as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT name FROM categories")
                 self.categories = [row[0] for row in cursor.fetchall()]
@@ -229,7 +230,7 @@ class EditTaskDialog(QDialog):
     def _update_task(self, has_completed_date: bool = True) -> None:
         """Update the task in the database, optionally including completed_date."""
         try:
-            with sqlite3.connect('./resources/db/main.db') as conn:
+            with sqlite3.connect(path_manager.get_path('db')) as conn:
                 cursor = conn.cursor()
 
                 # Get category ID
@@ -275,8 +276,8 @@ class EditTaskDialog(QDialog):
 class DatabaseManager:
     """Handles all database operations."""
     
-    def __init__(self, db_path: str = './assets/resource/data/main.db'):
-        self.db_path = db_path
+    def __init__(self, db_path: Optional[str] = None):
+        self.db_path = db_path if db_path else path_manager.get_path('db')
         
     def get_tables(self) -> List[str]:
         """Get list of all tables in the database."""

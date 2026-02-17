@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 from controller.stopwatch_helper import StopwatchController
 from controller.camera_model_helper import CameraModel
 from view.style import StyleUtils
+from controller.path_manager import path_manager
 
 class StopwatchView(QWidget):
     def __init__(self):
@@ -101,8 +102,8 @@ class StopwatchView(QWidget):
         self.start_camera_button = QPushButton("", self)
         self.stop_camera_button = QPushButton("", self)
 
-        on_camera_icon = QIcon("./assets/images/icons/video-camera.png")
-        off_camera_icon = QIcon("./assets/images/icons/cam_stop.png")
+        on_camera_icon = QIcon(path_manager.get_icon_path("video-camera.png"))
+        off_camera_icon = QIcon(path_manager.get_icon_path("cam_stop.png"))
 
         StyleUtils.style_primary_button(self.start_camera_button, on_camera_icon , icon_size=25)
         StyleUtils.style_primary_button(self.stop_camera_button, off_camera_icon , icon_size=25)

@@ -88,3 +88,20 @@ resources/__pycache__/
 # Misc
 *.swp
 *.lock
+
+# AppImage and Packaging
+appimagetool
+*.AppImage
+AppDir/
+
+# Runtime Data and Logs
+assets/logs/*.log
+assets/resource/data/*.db
+assets/resource/data/*.json
+assets/resource/data/*.html
+assets/resource/Daily_Update/*.md
+
+# Snap artifacts
+.snapcraft/
+snap/local/
+*.snap

@@ -6,11 +6,16 @@ from pathlib import Path
 from datetime import datetime
 from PySide6.QtWidgets import QMessageBox
 
+from controller.path_manager import path_manager
+
+logger = path_manager.get_logger("GitHandler")
+
 class GitHandler:
     def __init__(self):
-        self.local_path = './assets/resource/Daily_Update'
-        self.config_path = './assets/resource/data/git_config.json'
+        self.local_path = path_manager.get_path('daily_update')
+        self.config_path = path_manager.get_path('git_config')
         self.data = False
+        logger.info(f"GitHandler initialized with local_path: {self.local_path}")
         self.load_config()
 
 
@@ -31,7 +36,7 @@ class GitHandler:
                 setattr(self, key, value)
 
             if default_config['username']:
-                print("Git Configuration Data Loaded from json file")
+                logger.info("Git Configuration Data Loaded from json file")
                 self.data = True
 
         except Exception as e:
@@ -54,7 +59,7 @@ class GitHandler:
             for key, value in config_data.items():
                 setattr(self, key, value)
 
-            print("Git Configuration saved")
+            logger.info("Git Configuration saved")
             return True
 
         except Exception as e:
@@ -65,11 +70,30 @@ class GitHandler:
     def verify_git_installation():
         try:
             subprocess.run(['git', '--version'], check=True, capture_output=True)
-            print('Git is installed')
+            logger.info('Git is installed')
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             QMessageBox.critical(None, "Error", "Git is not installed or not accessible")
             return False
+
+    def _run_git_command(self, args, env=None, error_msg="Git command failed"):
+        """Helper to run git commands with consistent error handling."""
+        try:
+            # Always run in local_path synchronously
+            result = subprocess.run(
+                args,
+                cwd=self.local_path,
+                env=env or os.environ,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            logger.debug(f"Executed command: {' '.join(args)}")
+            return result
+        except subprocess.CalledProcessError as e:
+            err = e.stderr.strip() if e.stderr else str(e)
+            logger.error(f"{error_msg}: {err}")
+            raise Exception(f"{error_msg}: {err}")
 
     def setup_git(self):
         try:
@@ -79,12 +103,11 @@ class GitHandler:
             if not self.username or not self.email:
                 raise ValueError("Git username and email are required")
 
-            subprocess.run(['git', 'config', '--global', 'user.name', self.username],
-                           check=True, capture_output=True, text=True)
-            subprocess.run(['git', 'config', '--global', 'user.email', self.email],
-                           check=True, capture_output=True, text=True)
+            # Set global config
+            subprocess.run(['git', 'config', '--global', 'user.name', self.username], check=True)
+            subprocess.run(['git', 'config', '--global', 'user.email', self.email], check=True)
 
-            print('Git config set with username and email')
+            logger.info(f"Git global config set for {self.username}")
 
             repo_path = Path(self.local_path)
             if not (repo_path / '.git').exists():
@@ -92,11 +115,8 @@ class GitHandler:
 
             return True
 
-        except subprocess.CalledProcessError as e:
-            QMessageBox.critical(None, "Error", f"Git configuration failed: {e.stderr}")
-            return False
         except Exception as e:
-            QMessageBox.critical(None, "Error", f"Git setup error: {str(e)}")
+            QMessageBox.critical(None, "Git Setup Error", str(e))
             return False
 
     def get_remote_url(self):
@@ -105,129 +125,83 @@ class GitHandler:
     def initialize_repository(self):
         try:
             repo_path = Path(self.local_path)
-            if not repo_path.is_dir():
-                QMessageBox.critical(None, "Error", "Add task and then commit")
-                return False
-
-            os.chdir(repo_path)
-
-            subprocess.run(['git', 'init'], check=True, capture_output=True)
-            print('Git init .. ')
-
-            subprocess.run(['git', 'branch', '-M', 'main'],
-                           check=True, capture_output=True)
-            print('Git branch -M main')
-
-            subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
-            print("Git Add")
-            subprocess.run(['git', 'commit', '-m', "Initial commit"],
-                           check=True, capture_output=True)
-            print('Git Commit (initial)')
-
-            subprocess.run(['git', 'remote', 'add', 'origin', self.get_remote_url()],
-                           check=True, capture_output=True)
-            print('Git remote add origin')
-
+            if not repo_path.exists():
+                repo_path.mkdir(parents=True, exist_ok=True)
+            
+            # Use helper to run commands in the correct CWD
+            self._run_git_command(['git', 'init'], error_msg="Init failed")
+            self._run_git_command(['git', 'branch', '-M', 'main'], error_msg="Branch naming failed")
+            
+            # Check if there are files to add (excluding .git)
+            if any(f for f in repo_path.iterdir() if f.name != '.git'):
+                self._run_git_command(['git', 'add', '.'], error_msg="Add failed")
+                self._run_git_command(['git', 'commit', '-m', "Initial commit"], error_msg="Initial commit failed")
+            
+            # Remote setup
+            try:
+                self._run_git_command(['git', 'remote', 'add', 'origin', self.get_remote_url()], error_msg="Remote add failed")
+            except Exception:
+                # If origin exists, update it
+                self._run_git_command(['git', 'remote', 'set-url', 'origin', self.get_remote_url()], error_msg="Remote set-url failed")
+            
+            logger.info("Git repository initialized successfully")
             return True
 
-        except subprocess.CalledProcessError as e:
-            QMessageBox.critical(None, "Error", f"Repository initialization failed: {e.stderr}")
-            return False
         except Exception as e:
             QMessageBox.critical(None, "Error", f"Repository initialization error: {str(e)}")
             return False
 
     def commit_and_push(self):
         if not self.data:
-            # QMessageBox.warning(None, "Warning", "Please configure Git account first")
             return False
 
         reply = QMessageBox.question(
-            None,
-            "Confirm",
-            "Do you want to commit and push to GitHub?",
+            None, "Confirm", "Do you want to commit and push to GitHub?",
             QMessageBox.Yes | QMessageBox.No
         )
-
-        if reply != QMessageBox.Yes:
-            return False
+        if reply != QMessageBox.Yes: return False
 
         try:
-            if not self.verify_git_installation():
-                return False
+            if not self.verify_git_installation(): return False
 
             repo_path = Path(self.local_path)
             if not (repo_path / '.git').exists():
-                if not self.initialize_repository():
-                    QMessageBox.critical(None, "Error", f"Invalid repository path: {repo_path}")
-                    return False
+                if not self.initialize_repository(): return False
 
-            os.chdir(repo_path)
-
-            # Check if there are changes to commit
-            result = subprocess.run(['git', 'status', '--porcelain'],
-                                capture_output=True, text=True, check=True)
-            if not result.stdout.strip():
+            # Check status
+            status = self._run_git_command(['git', 'status', '--porcelain'], error_msg="Status check failed")
+            if not status.stdout.strip():
                 QMessageBox.information(None, "Info", "No changes to commit")
                 return True
 
-            # Set up git environment with credentials
-            git_env = {
-                **os.environ,
-                'GIT_ASKPASS': 'echo',
-                'GIT_USERNAME': self.username,
-                'GIT_PASSWORD': self.token
-            }
+            git_env = {**os.environ, 'GIT_ASKPASS': 'echo', 'GIT_USERNAME': self.username, 'GIT_PASSWORD': self.token}
 
-            # Stash any uncommitted changes (just in case)
-            subprocess.run(['git', 'stash'], env=git_env, check=True, capture_output=True)
-
-            try:
-                # Fetch and rebase instead of pull to have cleaner history
-                subprocess.run(['git', 'fetch', 'origin', 'main'], 
-                            env=git_env, check=True, capture_output=True)
-                subprocess.run(['git', 'rebase', 'origin/main'], 
-                            env=git_env, check=True, capture_output=True)
-            except subprocess.CalledProcessError as e:
-                # If rebase fails, abort it and notify user
-                subprocess.run(['git', 'rebase', '--abort'], 
-                            env=git_env, capture_output=True)
-                QMessageBox.critical(None, "Error", 
-                                f"Failed to rebase: {e.stderr if e.stderr else 'Merge conflicts detected'}")
-                subprocess.run(['git', 'stash', 'pop'], env=git_env, capture_output=True)
-                return False
-
-            # Pop any stashed changes
-            subprocess.run(['git', 'stash', 'pop'], env=git_env, capture_output=True)
-
-            # Add and commit local changes
-            subprocess.run(['git', 'add', '.'], env=git_env, check=True, capture_output=True)
+            # Stash, Fetch, Rebase, Pop
+            logger.info("Performing sync with remote...")
+            self._run_git_command(['git', 'stash'], env=git_env, error_msg="Stash failed")
             
-            date = datetime.now().strftime('%Y-%m-%d')
-            commit_message = f'{date} : Auto Commit'
-            subprocess.run(['git', 'commit', '-m', commit_message],
-                        env=git_env, check=True, capture_output=True)
+            try:
+                self._run_git_command(['git', 'fetch', 'origin', 'main'], env=git_env, error_msg="Fetch failed")
+                self._run_git_command(['git', 'rebase', 'origin/main'], env=git_env, error_msg="Rebase failed")
+            except Exception as e:
+                self._run_git_command(['git', 'rebase', '--abort'], env=git_env)
+                self._run_git_command(['git', 'stash', 'pop'], env=git_env)
+                raise e
 
-            # Push changes
-            push_result = subprocess.run(
-                ['git', 'push', 'origin', 'main'],
-                env=git_env,
-                capture_output=True,
-                text=True
-            )
+            self._run_git_command(['git', 'stash', 'pop'], env=git_env, error_msg="Stash pop failed")
 
-            if push_result.returncode != 0:
-                QMessageBox.critical(None, "Error", 
-                                f"Push failed: {push_result.stderr if push_result.stderr else 'Unknown error'}")
-                return False
+            # Add, Commit, Push
+            self._run_git_command(['git', 'add', '.'], env=git_env, error_msg="Add files failed")
+            
+            date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            commit_msg = f'Productivity Update: {date}'
+            self._run_git_command(['git', 'commit', '-m', commit_msg], env=git_env, error_msg="Commit failed")
+            
+            self._run_git_command(['git', 'push', 'origin', 'main'], env=git_env, error_msg="Push failed")
 
             QMessageBox.information(None, "Success", "Changes pushed to GitHub successfully!")
             return True
 
-        except subprocess.CalledProcessError as e:
-            error_msg = e.stderr if e.stderr else str(e)
-            QMessageBox.critical(None, "Error", f"Git operation failed: {error_msg}")
-            return False
         except Exception as e:
-            QMessageBox.critical(None, "Error", f"Unexpected error: {str(e)}")
+            QMessageBox.critical(None, "Git Sync Error", str(e))
             return False

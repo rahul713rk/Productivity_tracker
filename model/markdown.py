@@ -3,19 +3,24 @@ from datetime import datetime
 from .database import Database
 
 
+from controller.path_manager import path_manager
+
+logger = path_manager.get_logger("MarkdownHandler")
+
 class MarkdownHandler:
-    def __init__(self, db=None, markdown_path="./assets/resource/Daily_Update/README.md"):
+    def __init__(self, db=None, markdown_path=None):
         # Use an existing Database object or create a new one
         self.db = db if db else Database()
         
-        self.filename = markdown_path
+        self.filename = markdown_path if markdown_path else path_manager.get_path('markdown')
+        logger.info(f"MarkdownHandler initialized with path: {self.filename}")
     
     def markdown_helper(self):
         """Main method to update the markdown file."""
         tasks = self.db.get_today_tasks()
         stats = self.db.get_today_stats()
         self.update_todo_list(tasks=tasks, stats=stats)
-        print("Markdown updated!")
+        logger.info("Markdown updated!")
     
     def update_todo_list(self, tasks, stats):
         """Update the markdown file with today's tasks and statistics."""
@@ -37,7 +42,7 @@ class MarkdownHandler:
             f.write("\n## Tasks Overview\n\n")
             
             # Group tasks by their status
-            status_groups = {'Pending': [], 'Working': [], 'Done': []}
+            status_groups = {'Pending': [], 'Working': [], 'Completed': []}
             for task in tasks:
                 task_id, title, category, priority, status, created, completed = task
                 status_groups[status].append(task)
@@ -58,7 +63,7 @@ class MarkdownHandler:
     
     def get_task_statuses(self, tasks):
         """Helper function to group tasks by status."""
-        status_groups = {'Pending': [], 'Working': [], 'Done': []}
+        status_groups = {'Pending': [], 'Working': [], 'Completed': []}
         for task in tasks:
             task_id, title, category, priority, status, created, completed = task
             status_groups[status].append(task)

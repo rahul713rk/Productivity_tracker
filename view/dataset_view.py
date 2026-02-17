@@ -17,6 +17,9 @@ from PySide6.QtGui import QAction
 from view.style import StyleUtils
 from model.database import Database
 from controller.dataset_view_helper import DatabaseError , DatabaseManager , DataTreeView , EditTaskDialog
+from controller.path_manager import path_manager
+
+logger = path_manager.get_logger("DataViewerApp")
 
 class DataViewerApp(QMainWindow):
     """Main application window for data viewing and analysis."""
@@ -33,7 +36,8 @@ class DataViewerApp(QMainWindow):
         self.df = pd.DataFrame()
         self.original_df = pd.DataFrame()
         self.date_columns: List[str] = []
-        self.graph_file_path = './assets/resource/data/graph.html'
+        self.graph_file_path = path_manager.get_path('graph')
+        logger.info(f"DataViewerApp initialized. Graph path: {self.graph_file_path}")
         self.db_manager = DatabaseManager()
 
     def _setup_ui(self):
@@ -487,6 +491,5 @@ class DataViewerApp(QMainWindow):
     def _show_error(self, message: str) -> None:
         """Show an error message dialog and log it."""
         QMessageBox.critical(self, "Error", message)
-        print(f"Error: {message}")
-        traceback.print_exc()
+        logger.error(f"Error: {message}", exc_info=True)
         self.reset_view()

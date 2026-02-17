@@ -7,45 +7,37 @@ class TodoHelper:
     def __init__(self):
         self.db = Database()
 
-    @staticmethod
-    def get_categories():
+    def get_categories(self):
         """Get current categories from database"""
-        return Database().get_categories()
+        return self.db.get_categories()
 
-    @staticmethod
-    def add_task(title, category, priority, status):
+    def add_task(self, title, category, priority, status):
         """Add a new task to the database"""
-        Database().add_task(title, category, priority, status)
+        self.db.add_task(title, category, priority, status)
 
-    @staticmethod
-    def update_task(task_id, title, category, priority):
+    def update_task(self, task_id, title, category, priority):
         """Update an existing task in the database"""
-        Database().update_task(task_id, title, category, priority)
+        self.db.update_task(task_id, title, category, priority)
 
-    @staticmethod
-    def update_task_status(task_id, status):
+    def update_task_status(self, task_id, status):
         """Update the status of a task in the database"""
-        Database().update_task_status(task_id, status)
+        self.db.update_task_status(task_id, status)
 
-    @staticmethod
-    def delete_task(task_id):
+    def delete_task(self, task_id):
         """Delete a task from the database"""
-        Database().delete_task(task_id)
+        self.db.delete_task(task_id)
 
-    @staticmethod
-    def add_category(category):
+    def add_category(self, category):
         """Add a new category to the database"""
-        Database().add_category(category)
+        self.db.add_category(category)
 
-    @staticmethod
-    def delete_category(category):
+    def delete_category(self, category):
         """Delete a category from the database"""
-        Database().delete_category(category)
+        self.db.delete_category(category)
 
-    @staticmethod
-    def get_today_tasks():
+    def get_today_tasks(self):
         """Get today's tasks from the database"""
-        return Database().get_today_tasks()
+        return self.db.get_today_tasks()
 
     def close(self):
         """Close the database connection"""
