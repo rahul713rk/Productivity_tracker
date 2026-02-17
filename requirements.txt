@@ -1,0 +1,9 @@
+PySide6
+opencv-python
+mediapipe
+numpy
+pynput
+evdev
+pandas
+plotly
+nuitka
