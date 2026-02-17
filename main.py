@@ -91,6 +91,7 @@ class MainWindow(QMainWindow):
         
     def close(self):
         self.process()
+        self.StopwatchView.camera_model.stop_camera()
         self.TodoView.helper.close()
         stop_tracking()
         self.GitView.controller.commit_and_push()

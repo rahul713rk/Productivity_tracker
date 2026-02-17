@@ -1,156 +1,194 @@
 import cv2
 import mediapipe as mp
+import numpy as np
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QObject, Signal, QThread, QTimer, Qt
 
 from controller.path_manager import path_manager
 
 logger = path_manager.get_logger("CameraModel")
 
-class CameraModel:
-    def __init__(self, view):
-        self.view = view
+class CameraWorker(QObject):
+    """Worker class to handle camera capture and face detection in a background thread."""
+    frame_ready = Signal(np.ndarray)
+    face_status_changed = Signal(bool)
+    error_occurred = Signal(str)
+
+    def __init__(self, model_path):
+        super().__init__()
+        self.model_path = model_path
         self.cap = None
-        self.face_detected = False
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_camera_feed)
-        
-        # Initialize MediaPipe face detection
-        model_path = path_manager.get_path('face_model')
-        logger.info(f"Loading face detection model from: {model_path}")
-        self.mp_face_detection = vision.FaceDetector.create_from_options(
-            vision.FaceDetectorOptions(
-                base_options=python.BaseOptions(
-                    model_asset_path=model_path
-                ),
+        self.running = False
+        self.detector = None
+        self._last_face_status = False
+
+    def initialize_detector(self):
+        """Initialize MediaPipe detector in the worker thread."""
+        try:
+            options = vision.FaceDetectorOptions(
+                base_options=python.BaseOptions(model_asset_path=self.model_path),
                 min_detection_confidence=0.7
             )
-        )
-        
-        # Safe initialization of camera
-        self.safe_initialize_camera()
+            self.detector = vision.FaceDetector.create_from_options(options)
+            return True
+        except Exception as e:
+            self.error_occurred.emit(f"Detector init failed: {e}")
+            return False
 
-    def safe_initialize_camera(self):
-        """Initialize camera with safe checks for view components."""
-        try:
-            self.cap = cv2.VideoCapture(0)
-            if not self.cap.isOpened():
-                raise ValueError("Camera not accessible.")
+    def start(self):
+        if self.cap is not None:
+            return
             
-            # Safely set UI elements if they exist
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            self.error_occurred.emit("Could not open camera.")
+            self.cap = None
+            return
+
+        # Lower resolution at capture level for performance
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.running = True
+        self.run_loop()
+
+    def run_loop(self):
+        """Main processing loop."""
+        if not self.detector and not self.initialize_detector():
+            return
+
+        while self.running and self.cap and self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if not ret:
+                continue
+
+            # 1. OPTIMIZATION: Resize IMMEDIATELY to reduce pixels processed in next steps
+            # 320x240 is enough for face detection at desk distance
+            small_frame = cv2.resize(frame, (320, 240))
+            
+            # 2. OPTIMIZATION: Convert once and use for both detection and display
+            rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+            
+            # 3. Detect
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+            results = self.detector.detect(mp_image)
+            
+            face_detected = bool(results.detections)
+            
+            # 4. Draw directly on the working RGB frame if face found
+            if face_detected:
+                for detection in results.detections:
+                    bbox = detection.bounding_box
+                    start_point = (bbox.origin_x, bbox.origin_y)
+                    end_point = (bbox.origin_x + bbox.width, bbox.origin_y + bbox.height)
+                    cv2.rectangle(rgb_frame, start_point, end_point, (0, 255, 0), 2)
+
+            # 5. Emit results
+            self.frame_ready.emit(rgb_frame)
+            if face_detected != self._last_face_status:
+                self.face_status_changed.emit(face_detected)
+                self._last_face_status = face_detected
+
+        self.cleanup()
+
+    def stop(self):
+        self.running = False
+
+    def cleanup(self):
+        if self.cap:
+            self.cap.release()
+            self.cap = None
+        if self.detector:
+            self.detector.close()
+            self.detector = None
+
+class CameraModel(QObject):
+    """Optimized coordinator for camera and face detection using background threads."""
+    
+    def __init__(self, view):
+        super().__init__()
+        self.view = view
+        self.thread = None
+        self.worker = None
+        self.model_path = path_manager.get_path('face_model')
+        
+    def start_camera(self):
+        """Sets up and starts the background camera thread."""
+        if self.thread and self.thread.isRunning():
+            return
+
+        self.thread = QThread()
+        self.worker = CameraWorker(self.model_path)
+        self.worker.moveToThread(self.thread)
+        
+        # Connect signals
+        self.thread.started.connect(self.worker.start)
+        self.worker.frame_ready.connect(self.view.update_camera_feed)
+        self.worker.face_status_changed.connect(self._handle_face_status)
+        self.worker.error_occurred.connect(self._handle_error)
+        
+        # Ensure cleanup
+        self.worker.error_occurred.connect(self.stop_camera)
+
+        self.thread.start()
+        
+        if hasattr(self.view, 'start_camera_button'):
+            self.view.start_camera_button.setDisabled(True)
+        if hasattr(self.view, 'stop_camera_button'):
+            self.view.stop_camera_button.setEnabled(True)
+
+    def stop_camera(self):
+        """Gracefully stops the worker thread."""
+        try:
+            # 1. Disconnect signal first to prevent last frame from overriding the clear
+            if self.worker:
+                try:
+                    self.worker.frame_ready.disconnect()
+                except (TypeError, RuntimeError):
+                    pass
+
+            # 2. Clear the frame from view immediately
+            if hasattr(self.view, 'cam_label'):
+                self.view.cam_label.clear()
+                self.view.cam_label.setText("Camera Stopped")
+                self.view.cam_label.setAlignment(Qt.AlignCenter)
+
+            # 3. Signal worker to stop
+            if self.worker:
+                self.worker.stop()
+
+            # 4. Gracefully stop thread with timeout
+            if self.thread and self.thread.isRunning():
+                self.thread.quit()
+                if not self.thread.wait(2000):  # Wait max 2 seconds
+                    logger.warning("Camera thread did not stop gracefully, terminating...")
+                    self.thread.terminate()
+                    self.thread.wait()
+        except Exception as e:
+            logger.error(f"Error during camera shutdown: {e}")
+        finally:
+            self.thread = None
+            self.worker = None
+
+            if hasattr(self.view, 'controller'):
+                self.view.controller.stop()
             if hasattr(self.view, 'start_camera_button'):
                 self.view.start_camera_button.setEnabled(True)
             if hasattr(self.view, 'stop_camera_button'):
                 self.view.stop_camera_button.setDisabled(True)
-                
-        except Exception as e:
-            logger.error(f"Camera initialization error: {e}")
-            self.cap = None
-            if hasattr(self.view, 'cam_label'):
-                self.view.cam_label.setText("Camera not available")
-            if hasattr(self.view, 'start_camera_button'):
-                self.view.start_camera_button.setDisabled(True)
-            if hasattr(self.view, 'stop_camera_button'):
-                self.view.stop_camera_button.setDisabled(True)
 
-    def start_camera(self):
-        """Start the camera feed."""
-        if self.cap is None:
-            self.safe_initialize_camera()
-        
-        if self.cap and self.cap.isOpened():
-            if hasattr(self.view, 'start_camera_button'):
-                self.view.start_camera_button.setDisabled(True)
-            if hasattr(self.view, 'stop_camera_button'):
-                self.view.stop_camera_button.setEnabled(True)
-            self.timer.start(50)  # Update every 50ms
-
-    def stop_camera(self):
-        """Stop the camera feed."""
-        try:
-            if hasattr(self, 'timer') and self.timer.isActive():
-                self.timer.stop()
-        except RuntimeError:
-            pass  # Timer might already be deleted
-            
-        if self.cap and self.cap.isOpened():
-            self.cap.release()
-            self.cap = None
-        
+    def _handle_face_status(self, is_detected):
+        """Update the stopwatch controller based on face detection."""
         if hasattr(self.view, 'controller'):
-            self.view.controller.stop()
-            
-        if hasattr(self.view, 'start_camera_button'):
-            self.view.start_camera_button.setEnabled(True)
-        if hasattr(self.view, 'stop_camera_button'):
-            self.view.stop_camera_button.setDisabled(True)
-        if hasattr(self.view, 'cam_label'):
-            self.view.cam_label.clear()
-
-
-    def update_camera_feed(self):
-        """Update the video feed with optimized color processing and face detection."""
-        if self.cap is None or not self.cap.isOpened():
-            return
-
-        try:
-            # Capture frame
-            ret, frame = self.cap.read()
-            if not ret:
-                logger.error("Failed to capture frame")
-                return
-
-            # Convert BGR to RGB properly
-            processed_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                
-            # Face detection (MediaPipe expects RGB)
-            image = mp.Image(image_format=mp.ImageFormat.SRGB, data=processed_frame)
-            results = self.mp_face_detection.detect(image)
-                
-            # Draw detections on original frame (BGR for OpenCV drawing)
-            if results.detections:
-                self.face_detected = True
-                for detection in results.detections:
-                    bbox = detection.bounding_box
-                    x = bbox.origin_x
-                    y = bbox.origin_y
-                    w = bbox.width
-                    h = bbox.height
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            if is_detected:
+                self.view.controller.start()
             else:
-                self.face_detected = False
-                
-            # For display, we'll use the RGB frame with detections
-            display_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                
-            # Resize for display
-            display_frame = cv2.resize(display_frame, (300, 200))
+                self.view.controller.stop()
 
-            # Update view
-            if hasattr(self.view, 'update_camera_feed'):
-                self.view.update_camera_feed(display_frame)
-
-            # Control stopwatch
-            if hasattr(self.view, 'controller'):
-                if self.face_detected:
-                    self.view.controller.start()
-                else:
-                    self.view.controller.stop()
-
-        except Exception as e:
-            logger.error(f"Error processing frame: {e}")
-            self.stop_camera()
+    def _handle_error(self, message):
+        logger.error(message)
+        if hasattr(self.view, 'cam_label'):
+            self.view.cam_label.setText("Camera Error")
 
     def cleanup(self):
-        """Explicit cleanup method to call when done."""
         self.stop_camera()
-        if hasattr(self, 'mp_face_detection'):
-            self.mp_face_detection.close()
-
-    def __del__(self):
-        """Fallback cleanup if explicit cleanup wasn't called."""
-        try:
-            self.cleanup()
-        except Exception:
-            pass  # Prevent any exceptions during garbage collection

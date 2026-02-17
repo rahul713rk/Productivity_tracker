@@ -42,7 +42,7 @@ class MarkdownHandler:
             f.write("\n## Tasks Overview\n\n")
             
             # Group tasks by their status
-            status_groups = {'Pending': [], 'Working': [], 'Done': []}
+            status_groups = {'Pending': [], 'Working': [], 'Completed': []}
             for task in tasks:
                 task_id, title, category, priority, status, created, completed = task
                 status_groups[status].append(task)
@@ -63,7 +63,7 @@ class MarkdownHandler:
     
     def get_task_statuses(self, tasks):
         """Helper function to group tasks by status."""
-        status_groups = {'Pending': [], 'Working': [], 'Done': []}
+        status_groups = {'Pending': [], 'Working': [], 'Completed': []}
         for task in tasks:
             task_id, title, category, priority, status, created, completed = task
             status_groups[status].append(task)
