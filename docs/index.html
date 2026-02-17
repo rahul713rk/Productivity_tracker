@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --primary: #6366f1;
@@ -33,7 +36,9 @@
             overflow-x: hidden;
         }
 
-        h1, h2, h3 {
+        h1,
+        h2,
+        h3 {
             font-family: 'Outfit', sans-serif;
         }
 
@@ -59,13 +64,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             background: linear-gradient(135deg, white 0%, #e2e8f0 100%);
         }
 
-        .logo-container i {
-            font-size: 3rem;
-            color: var(--primary);
+        .logo-container i,
+        .logo-container img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
         }
 
         h1 {
@@ -199,23 +206,31 @@
         }
 
         @media (max-width: 768px) {
-            h1 { font-size: 2.5rem; }
-            .cta-buttons { flex-direction: column; }
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <header>
         <div class="container">
             <div class="logo-container">
-                <i class="fas fa-microchip"></i>
+                <img src="../assets/images/icon.svg" alt="Productivity Tracker Logo">
             </div>
             <h1>Productivity Tracker</h1>
-            <p class="tagline">An AI-powered engagement monitor that intelligently tracks your focus time using computer vision and global input analytics.</p>
-            
+            <p class="tagline">Automatic work monitoring and GitHub contribution syncing. Built for developers who hate
+                manual time-logging.</p>
+
             <div class="cta-buttons">
-                <a href="https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.0/ProductivityTracker-x86_64.AppImage" class="btn btn-primary">
+                <a href="https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.0/ProductivityTracker-x86_64.AppImage"
+                    class="btn btn-primary">
                     <i class="fab fa-linux"></i> Download AppImage
                 </a>
                 <a href="https://github.com/rahul713rk/Productivity_tracker" class="btn btn-outline">
@@ -235,7 +250,8 @@
             <div class="feature-card">
                 <div class="feature-icon"><i class="fas fa-keyboard"></i></div>
                 <h3>Activity Analysis</h3>
-                <p>Global input monitoring tracks your mouse and keyboard engagement to distinguish focus from idling.</p>
+                <p>Global input monitoring tracks your mouse and keyboard engagement to distinguish focus from idling.
+                </p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon"><i class="fas fa-sync"></i></div>
@@ -251,10 +267,18 @@
             <p>Built with stability and security in mind.</p>
         </div>
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 3rem; opacity: 0.6;">
-            <div style="text-align:center"><i class="fab fa-python fa-3x"></i><p>Python</p></div>
-            <div style="text-align:center"><i class="fas fa-brain fa-3x"></i><p>MediaPipe</p></div>
-            <div style="text-align:center"><i class="fas fa-desktop fa-3x"></i><p>PySide6</p></div>
-            <div style="text-align:center"><i class="fas fa-database fa-3x"></i><p>SQLite</p></div>
+            <div style="text-align:center"><i class="fab fa-python fa-3x"></i>
+                <p>Python</p>
+            </div>
+            <div style="text-align:center"><i class="fas fa-brain fa-3x"></i>
+                <p>MediaPipe</p>
+            </div>
+            <div style="text-align:center"><i class="fas fa-desktop fa-3x"></i>
+                <p>PySide6</p>
+            </div>
+            <div style="text-align:center"><i class="fas fa-database fa-3x"></i>
+                <p>SQLite</p>
+            </div>
         </div>
     </section>
 
@@ -268,4 +292,5 @@
     </footer>
 
 </body>
+
 </html>
