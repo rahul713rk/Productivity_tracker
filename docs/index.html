@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productivity Tracker | AI-Powered Engagement Monitoring</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --bg: #0f172a;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --card-bg: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        header {
+            padding: 6rem 0 4rem;
+            text-align: center;
+            background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%);
+        }
+
+        .logo-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 2rem;
+            background: white;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, white 0%, #e2e8f0 100%);
+        }
+
+        .logo-container i {
+            font-size: 3rem;
+            color: var(--primary);
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 3rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-bottom: 4rem;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-outline {
+            border: 2px solid #334155;
+            color: white;
+        }
+
+        .btn-outline:hover {
+            background: #334155;
+            transform: translateY(-2px);
+        }
+
+        /* Features */
+        .features {
+            padding: 6rem 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            border: 1px solid #334155;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+        }
+
+        /* Section Header */
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+        }
+
+        /* Footing */
+        footer {
+            padding: 4rem 0;
+            border-top: 1px solid #334155;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .github-link {
+            color: var(--text);
+            text-decoration: none;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .cta-buttons { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <div class="logo-container">
+                <i class="fas fa-microchip"></i>
+            </div>
+            <h1>Productivity Tracker</h1>
+            <p class="tagline">An AI-powered engagement monitor that intelligently tracks your focus time using computer vision and global input analytics.</p>
+            
+            <div class="cta-buttons">
+                <a href="https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.0/ProductivityTracker-x86_64.AppImage" class="btn btn-primary">
+                    <i class="fab fa-linux"></i> Download AppImage
+                </a>
+                <a href="https://github.com/rahul713rk/Productivity_tracker" class="btn btn-outline">
+                    <i class="fab fa-github"></i> View Source
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="container" style="margin-top: -5rem;">
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-eye"></i></div>
+                <h3>Presence Detection</h3>
+                <p>Advanced MediaPipe BlazeFace tracking automatically pauses your timer when you leave your desk.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-keyboard"></i></div>
+                <h3>Activity Analysis</h3>
+                <p>Global input monitoring tracks your mouse and keyboard engagement to distinguish focus from idling.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-sync"></i></div>
+                <h3>Cloud Auto-Sync</h3>
+                <p>Automatically push your daily productivity logs to GitHub to keep your contribution graph green.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="container" style="padding: 6rem 0;">
+        <div class="section-header">
+            <h2>Modern Privacy-First Tech</h2>
+            <p>Built with stability and security in mind.</p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 3rem; opacity: 0.6;">
+            <div style="text-align:center"><i class="fab fa-python fa-3x"></i><p>Python</p></div>
+            <div style="text-align:center"><i class="fas fa-brain fa-3x"></i><p>MediaPipe</p></div>
+            <div style="text-align:center"><i class="fas fa-desktop fa-3x"></i><p>PySide6</p></div>
+            <div style="text-align:center"><i class="fas fa-database fa-3x"></i><p>SQLite</p></div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Productivity Tracker Launch. Created by Rahul.</p>
+            <a href="https://github.com/rahul713rk/Productivity_tracker" class="github-link">
+                <i class="fab fa-github"></i> github.com/rahul713rk/Productivity_tracker
+            </a>
+        </div>
+    </footer>
+
+</body>
+</html>
