@@ -194,8 +194,3 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-## 📞 Contact
-
-Rahul - [Your GitHub Profile](https://github.com/rahul713rk)
-
-Project Link: [https://github.com/rahul713rk/Productivity_tracker](https://github.com/rahul713rk/Productivity_tracker)
