@@ -69,7 +69,7 @@ Section: utils
 Priority: optional
 Architecture: $ARCH
 Maintainer: Rahul <rahul@example.com>
-Depends: libgl1-mesa-glx, libxcb-cursor0
+Depends: libgl1, libxcb-cursor0
 Installed-Size: $SIZE
 Description: Productivity Tracker
  A productivity tracker that monitors camera feed for face detection 

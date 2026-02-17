@@ -56,6 +56,28 @@ sudo apt-get install -f
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="assets/images/1.png" alt="Activity Tracking" width="800">
+  <br>
+  <em>Real-time Activity & Face Tracking</em>
+</p>
+
+<p align="center">
+  <img src="assets/images/2.png" alt="Analytics" width="800">
+  <br>
+  <em>Detailed Analytics & Graphs</em>
+</p>
+
+<p align="center">
+  <img src="assets/images/3.png" alt="GitHub Integration" width="800">
+  <br>
+  <em>GitHub Integration</em>
+</p>
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Core**: Python 3.9+
