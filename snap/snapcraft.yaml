@@ -1,0 +1,42 @@
+name: productivity-tracker
+base: core22 # The base snap is based on Ubuntu 22.04
+version: '1.0'
+summary: Productivity Tracker with face detection and input tracking.
+description: |
+  A productivity tracker that monitors camera feed for face detection 
+  and tracks global input events to provide insights into your work habits.
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: devmode # 'strict' is restricted, 'devmode' allows access for testing
+
+apps:
+  productivity-tracker:
+    command: usr/bin/productivity_tracker
+    extensions: [gnome] # Provides GTK/Qt/Gnome libraries
+    plugs:
+      - camera
+      - x11
+      - wayland
+      - desktop
+      - desktop-legacy
+      - home
+      - network
+      - input # For keyboard/mouse tracking
+
+parts:
+  productivity-app:
+    plugin: dump
+    source: build/main.dist
+    organize:
+      '*': usr/bin/
+    stage-packages:
+      - libxcb-cursor0
+      - libgl1-mesa-glx
+      - libxcb-xinerama0
+      - libxcb-icccm4
+      - libxcb-image0
+      - libxcb-keysyms1
+      - libxcb-render-util0
+      - libxcb-shape0
+      - libxcb-xfixes0
+      - libxkbcommon-x11-0
