@@ -2,10 +2,14 @@ import sqlite3
 from datetime import datetime
 
 
+from controller.path_manager import path_manager
+
+logger = path_manager.get_logger("Database")
+
 class Database:
     def __init__(self):
-        
-        filename = './assets/resource/data/main.db'
+        filename = path_manager.get_path('db')
+        logger.info(f"Connecting to database at: {filename}")
         self.conn = sqlite3.connect(filename)
         self.cursor = self.conn.cursor()
         self.create_tables()
@@ -201,7 +205,7 @@ class Database:
         date = datetime.now().date()
         time, key_count, click_count = data
 
-        print(time, " : ", key_count, " : ", click_count)
+        logger.info(f"{time} : {key_count} : {click_count}")
 
         # Convert elapsed time from seconds to minutes
         elapsed_time_minutes = round(time / 60, 2)
@@ -228,4 +232,4 @@ class Database:
         )
 
         self.conn.commit()
-        print("Data updated!")
+        logger.info("Data updated!")

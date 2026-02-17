@@ -6,11 +6,16 @@ from pathlib import Path
 from datetime import datetime
 from PySide6.QtWidgets import QMessageBox
 
+from controller.path_manager import path_manager
+
+logger = path_manager.get_logger("GitHandler")
+
 class GitHandler:
     def __init__(self):
-        self.local_path = './assets/resource/Daily_Update'
-        self.config_path = './assets/resource/data/git_config.json'
+        self.local_path = path_manager.get_path('daily_update')
+        self.config_path = path_manager.get_path('git_config')
         self.data = False
+        logger.info(f"GitHandler initialized with local_path: {self.local_path}")
         self.load_config()
 
 
@@ -31,7 +36,7 @@ class GitHandler:
                 setattr(self, key, value)
 
             if default_config['username']:
-                print("Git Configuration Data Loaded from json file")
+                logger.info("Git Configuration Data Loaded from json file")
                 self.data = True
 
         except Exception as e:
@@ -54,7 +59,7 @@ class GitHandler:
             for key, value in config_data.items():
                 setattr(self, key, value)
 
-            print("Git Configuration saved")
+            logger.info("Git Configuration saved")
             return True
 
         except Exception as e:
@@ -65,7 +70,7 @@ class GitHandler:
     def verify_git_installation():
         try:
             subprocess.run(['git', '--version'], check=True, capture_output=True)
-            print('Git is installed')
+            logger.info('Git is installed')
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             QMessageBox.critical(None, "Error", "Git is not installed or not accessible")

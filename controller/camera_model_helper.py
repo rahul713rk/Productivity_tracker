@@ -1,6 +1,12 @@
 import cv2
 import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 from PySide6.QtCore import QTimer
+
+from controller.path_manager import path_manager
+
+logger = path_manager.get_logger("CameraModel")
 
 class CameraModel:
     def __init__(self, view):
@@ -11,9 +17,15 @@ class CameraModel:
         self.timer.timeout.connect(self.update_camera_feed)
         
         # Initialize MediaPipe face detection
-        self.mp_face_detection = mp.solutions.face_detection
-        self.face_detection = self.mp_face_detection.FaceDetection(
-            min_detection_confidence=0.7
+        model_path = path_manager.get_path('face_model')
+        logger.info(f"Loading face detection model from: {model_path}")
+        self.mp_face_detection = vision.FaceDetector.create_from_options(
+            vision.FaceDetectorOptions(
+                base_options=python.BaseOptions(
+                    model_asset_path=model_path
+                ),
+                min_detection_confidence=0.7
+            )
         )
         
         # Safe initialization of camera
@@ -33,7 +45,7 @@ class CameraModel:
                 self.view.stop_camera_button.setDisabled(True)
                 
         except Exception as e:
-            print(f"Camera initialization error: {e}")
+            logger.error(f"Camera initialization error: {e}")
             self.cap = None
             if hasattr(self.view, 'cam_label'):
                 self.view.cam_label.setText("Camera not available")
@@ -86,25 +98,25 @@ class CameraModel:
             # Capture frame
             ret, frame = self.cap.read()
             if not ret:
-                print("Failed to capture frame")
+                logger.error("Failed to capture frame")
                 return
 
             # Convert BGR to RGB properly
             processed_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 
             # Face detection (MediaPipe expects RGB)
-            results = self.face_detection.process(processed_frame)
+            image = mp.Image(image_format=mp.ImageFormat.SRGB, data=processed_frame)
+            results = self.mp_face_detection.detect(image)
                 
-                # Draw detections on original frame (BGR for OpenCV drawing)
+            # Draw detections on original frame (BGR for OpenCV drawing)
             if results.detections:
                 self.face_detected = True
                 for detection in results.detections:
-                    bboxC = detection.location_data.relative_bounding_box
-                    ih, iw, _ = frame.shape
-                    x = int(bboxC.xmin * iw)
-                    y = int(bboxC.ymin * ih)
-                    w = int(bboxC.width * iw)
-                    h = int(bboxC.height * ih)
+                    bbox = detection.bounding_box
+                    x = bbox.origin_x
+                    y = bbox.origin_y
+                    w = bbox.width
+                    h = bbox.height
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             else:
                 self.face_detected = False
@@ -127,14 +139,14 @@ class CameraModel:
                     self.view.controller.stop()
 
         except Exception as e:
-            print(f"Error processing frame: {e}")
+            logger.error(f"Error processing frame: {e}")
             self.stop_camera()
 
     def cleanup(self):
         """Explicit cleanup method to call when done."""
         self.stop_camera()
-        if hasattr(self, 'face_detection'):
-            self.face_detection.close()
+        if hasattr(self, 'mp_face_detection'):
+            self.mp_face_detection.close()
 
     def __del__(self):
         """Fallback cleanup if explicit cleanup wasn't called."""

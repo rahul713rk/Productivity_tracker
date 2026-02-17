@@ -1,3 +1,4 @@
+import controller.path_manager
 from PySide6.QtWidgets import (QApplication, QMainWindow, 
                                QTabWidget, QWidget, QLabel, 
                                QHBoxLayout , QScrollArea , QMessageBox)
@@ -37,6 +38,38 @@ class MainWindow(QMainWindow):
         
         # Set the central widget
         self.setCentralWidget(tabs)
+
+        # Check for Wayland permissions
+        self.check_wayland_permissions()
+    
+    def check_wayland_permissions(self):
+        import os
+        from controller.activivty_tracker import check_permissions, request_permission_fix
+        
+        if os.environ.get('XDG_SESSION_TYPE') == 'wayland' and not check_permissions():
+            reply = QMessageBox.warning(
+                self,
+                "Permissions Required",
+                "Activity tracking requires access to input devices on Wayland.\n\n"
+                "Would you like to automatically add your user to the 'input' group?\n"
+                "(Note: You will need to Log Out and Log In after this for it to work.)",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            
+            if reply == QMessageBox.Yes:
+                if request_permission_fix():
+                    QMessageBox.information(
+                        self,
+                        "Success",
+                        "Permission fixed! Please Log Out and Log Back In to enable tracking."
+                    )
+                else:
+                    QMessageBox.critical(
+                        self,
+                        "Error",
+                        "Failed to fix permissions. Please run the command manually."
+                    )
     
 
     def tab1_setup(self):

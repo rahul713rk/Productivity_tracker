@@ -8,6 +8,7 @@ from view.tree_view import create_task_tree
 from controller.todo_helper import TodoHelper
 from view.task_edit_view import Edit_Task
 from view.style import StyleUtils
+from controller.path_manager import path_manager
 
 class TodoView(QWidget):
     task_updated = Signal()  # Signal to notify when tasks are updated
@@ -369,7 +370,8 @@ class TodoView(QWidget):
             
             # Delete button
             delete_button = QPushButton()
-            StyleUtils.style_icon_button(delete_button, QIcon("./assets/images/icons/bin.png"))
+            delete_button.setIcon(QIcon(path_manager.get_icon_path("bin.png")))
+            StyleUtils.style_icon_button(delete_button, delete_button.icon())
             delete_button.clicked.connect(lambda _, id=task_id: self.delete_task(id))
             delete_button.setToolTip("Delete Task")
             tree.setIndexWidget(model.index(row, 4), delete_button)
@@ -377,20 +379,23 @@ class TodoView(QWidget):
             # Complete/Pending button
             if status != 'Completed':
                 complete_button = QPushButton()
-                StyleUtils.style_icon_button(complete_button, QIcon("./assets/images/icons/complete.png"))
+                complete_button.setIcon(QIcon(path_manager.get_icon_path("complete.png")))
+                StyleUtils.style_icon_button(complete_button, complete_button.icon())
                 complete_button.clicked.connect(lambda _, id=task_id: self.change_status("Completed"))
                 complete_button.setToolTip("Mark as Complete")
                 tree.setIndexWidget(model.index(row, 5), complete_button)
             else:
                 pending_button = QPushButton()
-                StyleUtils.style_icon_button(pending_button, QIcon("./assets/images/icons/upload-file.png"))
+                pending_button.setIcon(QIcon(path_manager.get_icon_path("upload-file.png")))
+                StyleUtils.style_icon_button(pending_button, pending_button.icon())
                 pending_button.clicked.connect(lambda _, id=task_id: self.change_status("Pending"))
                 pending_button.setToolTip("Mark as Pending")
                 tree.setIndexWidget(model.index(row, 5), pending_button)
 
             # Edit button
             edit_button = QPushButton()
-            StyleUtils.style_icon_button(edit_button, QIcon("./assets/images/icons/edit.png"))
+            edit_button.setIcon(QIcon(path_manager.get_icon_path("edit.png")))
+            StyleUtils.style_icon_button(edit_button, edit_button.icon())
             edit_button.clicked.connect(self.edit_task)
             edit_button.setToolTip("Edit Task")
             tree.setIndexWidget(model.index(row, 6), edit_button)

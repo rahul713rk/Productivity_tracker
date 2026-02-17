@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (QPushButton, QLabel, QLineEdit, QTextEdit,
                               QProgressBar, QListWidget, QGroupBox , QAbstractItemView , QDateEdit)
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon ,  QColor, QFont
+from controller.path_manager import path_manager
 
 class StyleUtils:
 
@@ -461,7 +462,7 @@ class StyleUtils:
                 border-bottom-right-radius: 4px;
             }}
             QComboBox::down-arrow {{
-                image: url(./assets/images/icons/down1.png);
+                image: url({path_manager.get_icon_path('down1.png')});
                 width: 24px;
                 height: 24px;
             }}
@@ -761,12 +762,12 @@ class StyleUtils:
                 width: 20px;
                 border-left: 1px solid #ccc;
             }
-            QDateEdit::down-arrow {
-                image: url(./assets/images/icons/calendar.png);
+            QDateEdit::down-arrow {{
+                image: url({path_manager.get_icon_path('calendar.png')});
                 color: black;
                 width: 24px;
                 height: 24px;
-            }
+            }}
             QDateEdit:disabled {
                 background-color: black;
                 color: white;
