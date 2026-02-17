@@ -80,7 +80,6 @@ class MainWindow(QMainWindow):
         # Add Stopwatch and Todo views to the layout
         tab1_layout.addWidget(self.StopwatchView)
         tab1_layout.addWidget(self.TodoView)
-        self.setCentralWidget(tab1)
         return tab1
     
 

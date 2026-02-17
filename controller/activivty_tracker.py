@@ -40,7 +40,7 @@ def request_permission_fix():
         subprocess.run(command.split(), check=True)
         return True
     except Exception as e:
-        print(f"Failed to run permission fix: {e}")
+        logger.error(f"Failed to run permission fix: {e}")
         return False
 
 
