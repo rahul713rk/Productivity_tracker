@@ -26,6 +26,9 @@ class GitController:
     def commit_and_push(self):
         return self.model.commit_and_push()
 
+    def silent_commit_and_push(self):
+        return self.model.silent_commit_and_push()
+
     def get_status_text(self):
         if self.model.username and self.model.repo_name:
             return f"Linked Account: {self.model.username}\nRepository: {self.model.repo_name}"

@@ -17,6 +17,14 @@ class AccountDialog(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
+        info_layout = QHBoxLayout()
+        info_icon = QLabel("ℹ️ Token Help")
+        info_icon.setStyleSheet("color: #4a90e2; font-weight: bold; padding-bottom: 5px;")
+        info_icon.setToolTip("To get your GitHub Token:\n1. Go to GitHub Settings -> Developer settings -> Personal access tokens (classic).\n2. Generate a new token with 'repo' scope.\n3. Paste the token here.")
+        info_layout.addWidget(info_icon)
+        info_layout.addStretch()
+        layout.addLayout(info_layout)
+
         layout.addWidget(QLabel("Git Username:"))
         self.username_entry = QLineEdit()
         StyleUtils.style_text_input(self.username_entry)

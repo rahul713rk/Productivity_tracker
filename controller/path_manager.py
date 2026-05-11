@@ -35,6 +35,12 @@ class PathManager:
             self.user_data_dir = Path(data_home) / "productivity-tracker"
         else:
             self.user_data_dir = Path.home() / ".local" / "share" / "productivity-tracker"
+
+        config_home = os.environ.get('XDG_CONFIG_HOME')
+        if config_home:
+            self.user_config_dir = Path(config_home) / "productivity-tracker"
+        else:
+            self.user_config_dir = Path.home() / ".config" / "productivity-tracker"
         
         # 2. Define Assets Directory (Read-only)
         self.assets_dir = self.app_dir / "assets"
@@ -49,7 +55,7 @@ class PathManager:
         self.logs_dir = self.user_data_dir / "logs"
         
         # Ensure writable directories exist
-        for d in [self.user_data_dir, self.writable_resource_dir, self.data_dir, self.update_dir, self.logs_dir]:
+        for d in [self.user_data_dir, self.user_config_dir, self.writable_resource_dir, self.data_dir, self.update_dir, self.logs_dir]:
             try:
                 d.mkdir(parents=True, exist_ok=True)
             except Exception as e:
@@ -59,7 +65,7 @@ class PathManager:
             
         # 4. Specific File Paths
         self.db_path = self.data_dir / "main.db"
-        self.git_config_path = self.data_dir / "git_config.json"
+        self.git_config_path = self.user_config_dir / "git_config.json"
         self.markdown_path = self.update_dir / "README.md"
         self.log_file = self.logs_dir / "app.log"
         self.graph_html = self.data_dir / "graph.html"

@@ -12,7 +12,22 @@ from model.database import Database
 from model.markdown import MarkdownHandler
 
 import threading
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, QThread, Signal, Qt
+
+class GitSyncWorker(QThread):
+    finished_signal = Signal()
+    error_signal = Signal(str)
+
+    def __init__(self, git_controller):
+        super().__init__()
+        self.git_controller = git_controller
+
+    def run(self):
+        try:
+            self.git_controller.silent_commit_and_push()
+        except Exception as e:
+            self.error_signal.emit(str(e))
+        self.finished_signal.emit()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -98,15 +113,12 @@ class MainWindow(QMainWindow):
         self.markdown.markdown_helper()
 
         
-    def close(self):
+    def cleanup_components(self):
         self.process()
         self.StopwatchView.camera_model.stop_camera()
         self.TodoView.helper.close()
         stop_tracking()
         
-        # Best solution: Use a thread for Git operations to avoid UI hang
-        threading.Thread(target=self.GitView.controller.commit_and_push, daemon=True).start()
-    
     def closeEvent(self, event):
         reply = QMessageBox.question(
             self,
@@ -117,10 +129,32 @@ class MainWindow(QMainWindow):
         )
 
         if reply == QMessageBox.Yes:
-            self.close()
-            event.accept()
+            event.ignore() # Ignore standard close to keep thread alive
+            
+            # Show the waiting dialog
+            from PySide6.QtWidgets import QProgressDialog
+            
+            if self.GitView.controller.model.data:
+                self.progress = QProgressDialog("Syncing to Git... Please wait", None, 0, 0, self)
+                self.progress.setWindowTitle("Syncing")
+                self.progress.setWindowModality(Qt.WindowModal)
+                self.progress.show()
+                QApplication.processEvents()
+                
+                self.worker = GitSyncWorker(self.GitView.controller)
+                self.worker.finished_signal.connect(self._finish_close)
+                self.worker.error_signal.connect(lambda e: print(f"Sync error: {e}"))
+                self.worker.start()
+            else:
+                self._finish_close()
         else:
             event.ignore()
+            
+    def _finish_close(self):
+        if hasattr(self, 'progress') and self.progress:
+            self.progress.close()
+        self.cleanup_components()
+        QApplication.quit()
     
     
 if __name__ == "__main__":

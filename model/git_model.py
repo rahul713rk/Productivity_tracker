@@ -211,3 +211,45 @@ class GitHandler:
         except Exception as e:
             QMessageBox.critical(None, "Git Sync Error", str(e))
             return False
+
+    def silent_commit_and_push(self):
+        """Performs Git sync without prompting the GUI (safe for background threads)."""
+        if not self.data:
+            return False
+
+        try:
+            if not self.verify_git_installation(): return False
+
+            repo_path = Path(self.local_path)
+            if not (repo_path / '.git').exists():
+                # initialize_repository has info QMessageBoxes, but inside a thread they fail.
+                # However, usually the repo is initialized by the time we quit. 
+                # For safety, let's just create it directly if possible.
+                pass # Skipping init for silent sync to avoid UI freezes
+
+            status = self._run_git_command(['git', 'status', '--porcelain'], error_msg="Status check failed")
+            if not status.stdout.strip():
+                return True
+
+            git_env = {**os.environ, 'GIT_ASKPASS': 'echo', 'GIT_USERNAME': self.username, 'GIT_PASSWORD': self.token}
+            self._run_git_command(['git', 'stash'], env=git_env, error_msg="Stash failed")
+            
+            try:
+                self._run_git_command(['git', 'fetch', 'origin', 'main'], env=git_env, error_msg="Fetch failed")
+                self._run_git_command(['git', 'rebase', 'origin/main'], env=git_env, error_msg="Rebase failed")
+            except Exception as e:
+                self._run_git_command(['git', 'rebase', '--abort'], env=git_env)
+                self._run_git_command(['git', 'stash', 'pop'], env=git_env)
+                raise e
+
+            self._run_git_command(['git', 'stash', 'pop'], env=git_env, error_msg="Stash pop failed")
+            self._run_git_command(['git', 'add', '.'], env=git_env, error_msg="Add files failed")
+            
+            date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            commit_msg = f'Productivity Update: {date}'
+            self._run_git_command(['git', 'commit', '-m', commit_msg], env=git_env, error_msg="Commit failed")
+            self._run_git_command(['git', 'push', 'origin', 'main'], env=git_env, error_msg="Push failed")
+            return True
+        except Exception as e:
+            logger.error(f"Silent Sync Error: {e}")
+            raise e
