@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide — Productivity Tracker</title>
+    <meta name="description" content="Complete installation, setup, and usage guide for Productivity Tracker on Linux.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Outfit:wght@400;700;800&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="assets/images/icon.svg" type="image/svg+xml">
+</head>
+
+<body>
+
+    <!-- ─── Navbar ─── -->
+    <nav class="navbar" id="navbar">
+        <div class="container nav-inner">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/images/icon.svg" alt="Logo" width="32" height="32">
+                <span>Productivity Tracker</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="index.html#features">Features</a>
+                <a href="#installation">Installation</a>
+                <a href="#usage">Usage</a>
+                <a href="#troubleshooting">Troubleshooting</a>
+                <a href="https://github.com/rahul713rk/Productivity_tracker" class="btn btn-sm btn-outline"><i
+                        class="fab fa-github"></i> GitHub</a>
+            </div>
+            <button class="nav-toggle" id="nav-toggle" aria-label="Menu"><i class="fas fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <!-- ─── Guide Hero ─── -->
+    <header class="guide-hero">
+        <div class="container">
+            <div class="hero-badge">Documentation</div>
+            <h1>User Guide</h1>
+            <p class="tagline">Everything you need to install, configure, and get the most out of Productivity Tracker.
+            </p>
+        </div>
+    </header>
+
+    <!-- ─── Table of Contents ─── -->
+    <section class="section">
+        <div class="container guide-layout">
+            <aside class="guide-sidebar" id="guide-sidebar">
+                <div class="toc">
+                    <h4>On This Page</h4>
+                    <ul>
+                        <li><a href="#requirements">System Requirements</a></li>
+                        <li><a href="#installation">Installation</a></li>
+                        <li><a href="#first-run">First Run</a></li>
+                        <li><a href="#usage">Usage Guide</a></li>
+                        <li><a href="#github-sync">GitHub Sync</a></li>
+                        <li><a href="#building">Building from Source</a></li>
+                        <li><a href="#troubleshooting">Troubleshooting</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="guide-content">
+
+                <!-- ─── Requirements ─── -->
+                <article class="guide-section" id="requirements">
+                    <h2><i class="fas fa-clipboard-check"></i> System Requirements</h2>
+                    <div class="req-grid">
+                        <div class="req-card">
+                            <strong>Operating System</strong>
+                            <p>Linux (Ubuntu 20.04+, Debian 11+, Fedora 36+, or any modern distro)</p>
+                        </div>
+                        <div class="req-card">
+                            <strong>Display Server</strong>
+                            <p>X11 or Wayland (both supported natively)</p>
+                        </div>
+                        <div class="req-card">
+                            <strong>Webcam</strong>
+                            <p>Any USB or built-in camera for face detection</p>
+                        </div>
+                        <div class="req-card">
+                            <strong>Python</strong>
+                            <p>3.9 or later (only for building from source)</p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- ─── Installation ─── -->
+                <article class="guide-section" id="installation">
+                    <h2><i class="fas fa-download"></i> Installation</h2>
+
+                    <h3>Option A — AppImage (Recommended)</h3>
+                    <p>The AppImage is a portable binary that runs on any Linux distribution. No installation required.
+                    </p>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" onclick="copyCode(this)"><i class="fas fa-copy"></i> Copy</button>
+                        </div>
+                        <pre><code># Download the AppImage
+wget https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.1/ProductivityTracker-x86_64.AppImage
+
+# Make it executable
+chmod +x ProductivityTracker-x86_64.AppImage
+
+# Run
+./ProductivityTracker-x86_64.AppImage</code></pre>
+                    </div>
+
+                    <h3>Option B — DEB Package (Ubuntu / Debian)</h3>
+                    <p>Native package that integrates with your system's application menu.</p>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" onclick="copyCode(this)"><i class="fas fa-copy"></i> Copy</button>
+                        </div>
+                        <pre><code># Download the DEB package
+wget https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.1/productivity-tracker_1.1_amd64.deb
+
+# Install
+sudo dpkg -i productivity-tracker_1.1_amd64.deb
+
+# Fix any missing dependencies
+sudo apt-get install -f</code></pre>
+                    </div>
+
+                    <h3>Option C — Build from Source</h3>
+                    <p>For developers or users on non-Debian distributions.</p>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" onclick="copyCode(this)"><i class="fas fa-copy"></i> Copy</button>
+                        </div>
+                        <pre><code># Clone the repository
+git clone https://github.com/rahul713rk/Productivity_tracker.git
+cd Productivity_tracker
+
+# Install system dependencies (Ubuntu/Debian)
+sudo apt update
+sudo apt install python3-venv libxcb-cursor0 libgl1-mesa-glx
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Run
+python main.py</code></pre>
+                    </div>
+                </article>
+
+                <!-- ─── First Run ─── -->
+                <article class="guide-section" id="first-run">
+                    <h2><i class="fas fa-play-circle"></i> First Run</h2>
+
+                    <div class="callout callout-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Wayland Users</strong> — Activity tracking on Wayland requires your user to be in
+                            the <code>input</code> group. The app will prompt you on first launch, or you can run:
+                            <code>sudo usermod -aG input $USER</code> and then log out/in.
+                        </div>
+                    </div>
+
+                    <p>When you launch for the first time:</p>
+                    <ol class="steps-list">
+                        <li><strong>Camera Permission</strong> — Your OS may ask for webcam access. Grant it so face
+                            detection can work.</li>
+                        <li><strong>Home Tab Loads</strong> — You'll see the stopwatch (left) and TODO list (right).
+                            The camera feed starts automatically.</li>
+                        <li><strong>Timer Auto-Starts</strong> — As soon as a face is detected in the camera feed,
+                            the productivity timer begins counting.</li>
+                        <li><strong>Auto-Save</strong> — The app saves your session data every 10 minutes
+                            automatically.</li>
+                    </ol>
+                </article>
+
+                <!-- ─── Usage Guide ─── -->
+                <article class="guide-section" id="usage">
+                    <h2><i class="fas fa-book-open"></i> Usage Guide</h2>
+
+                    <h3>Home Tab — Timer &amp; Tasks</h3>
+                    <p>The Home tab is split into two panels:</p>
+                    <ul>
+                        <li><strong>Left Panel (Stopwatch):</strong> Shows the running timer and live camera feed with
+                            face detection overlay. The timer pauses when you leave and resumes when you return.</li>
+                        <li><strong>Right Panel (TODO):</strong> A full task manager. Create tasks, assign categories,
+                            and drag them through <em>Pending → Working → Completed</em> statuses.</li>
+                    </ul>
+
+                    <h3>Dataset Tab — Analytics</h3>
+                    <p>View your historical productivity data:</p>
+                    <ul>
+                        <li><strong>Data View:</strong> Browse raw daily records in a filterable table.</li>
+                        <li><strong>Graph View:</strong> Toggle to interactive QtCharts visualizations showing trends
+                            over time (daily hours, activity patterns, weekly comparisons).</li>
+                        <li>Use the left-side control panel to filter by date range, category, or metric.</li>
+                    </ul>
+
+                    <h3>Git Tab — Sync Setup</h3>
+                    <p>Configure automatic GitHub syncing:</p>
+                    <ol>
+                        <li>Enter your GitHub <strong>username</strong>, <strong>email</strong>, and
+                            <strong>personal access token</strong> (with repo scope).
+                        </li>
+                        <li>Specify the <strong>repository URL</strong> where logs should be pushed.</li>
+                        <li>Click <strong>Save</strong>. From now on, every time you close the app, a Markdown log is
+                            committed and pushed.</li>
+                    </ol>
+
+                    <div class="callout callout-tip">
+                        <i class="fas fa-lightbulb"></i>
+                        <div>
+                            <strong>Tip:</strong> Create a dedicated private repository for your logs. This keeps your
+                            contribution graph active without cluttering your main projects.
+                        </div>
+                    </div>
+                </article>
+
+                <!-- ─── GitHub Sync Deep Dive ─── -->
+                <article class="guide-section" id="github-sync">
+                    <h2><i class="fab fa-github"></i> GitHub Sync — In Depth</h2>
+
+                    <h3>How It Works</h3>
+                    <p>When you close the application (and confirm the exit dialog):</p>
+                    <ol>
+                        <li>A Markdown file summarizing today's session is generated from your SQLite data.</li>
+                        <li>The app stages, commits, and pushes to your configured remote repository.</li>
+                        <li>A progress dialog shows the sync status — the app won't close until sync is done.</li>
+                    </ol>
+
+                    <h3>Creating a Personal Access Token</h3>
+                    <div class="code-block">
+                        <div class="code-header"><span>Steps</span></div>
+                        <pre><code>1. Go to GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic)
+2. Click "Generate new token (classic)"
+3. Set a descriptive note (e.g., "Productivity Tracker")
+4. Select the "repo" scope (full control of private repos)
+5. Generate and copy the token
+6. Paste it into the Git tab in the application</code></pre>
+                    </div>
+
+                    <div class="callout callout-warn">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Security:</strong> Your token is stored locally in
+                            <code>~/.config/productivity-tracker/</code>. Never share or commit this file.
+                        </div>
+                    </div>
+                </article>
+
+                <!-- ─── Building ─── -->
+                <article class="guide-section" id="building">
+                    <h2><i class="fas fa-hammer"></i> Building Distributable Packages</h2>
+
+                    <p>The project includes scripts to create standalone distributable packages.</p>
+
+                    <div class="build-grid">
+                        <div class="build-card">
+                            <h4><i class="fas fa-cube"></i> Nuitka Binary</h4>
+                            <code>bash nuitka_build.sh</code>
+                            <p>Compiles Python to a standalone binary in <code>output/main.dist/</code>.</p>
+                        </div>
+                        <div class="build-card">
+                            <h4><i class="fab fa-linux"></i> AppImage</h4>
+                            <code>bash create_appimage.sh</code>
+                            <p>Packages the Nuitka output into a portable <code>.AppImage</code>.</p>
+                        </div>
+                        <div class="build-card">
+                            <h4><i class="fas fa-box"></i> DEB Package</h4>
+                            <code>bash create_deb.sh</code>
+                            <p>Creates a Debian installer package.</p>
+                        </div>
+                        <div class="build-card">
+                            <h4><i class="fab fa-docker"></i> Docker Build</h4>
+                            <code>bash docker_build.sh</code>
+                            <p>Builds inside a Docker container for reproducible environments.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- ─── Troubleshooting ─── -->
+                <article class="guide-section" id="troubleshooting">
+                    <h2><i class="fas fa-wrench"></i> Troubleshooting</h2>
+
+                    <div class="faq-item">
+                        <h4>Camera feed shows black / "No camera detected"</h4>
+                        <ul>
+                            <li>Ensure your webcam is connected and not in use by another application.</li>
+                            <li>Check permissions: <code>ls -la /dev/video0</code> — your user should have read
+                                access.</li>
+                            <li>Install <code>v4l-utils</code> and run <code>v4l2-ctl --list-devices</code> to verify
+                                the camera is detected.</li>
+                        </ul>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4>Activity tracking doesn't work on Wayland</h4>
+                        <ul>
+                            <li>Run <code>groups</code> and confirm <code>input</code> is listed.</li>
+                            <li>If not: <code>sudo usermod -aG input $USER</code>, then <strong>log out and back
+                                    in</strong>.</li>
+                            <li>Verify with <code>cat /dev/input/event0</code> — you should see raw bytes when you
+                                press a key.</li>
+                        </ul>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4>AppImage won't launch</h4>
+                        <ul>
+                            <li>Make sure FUSE is installed: <code>sudo apt install libfuse2</code></li>
+                            <li>Re-download the file — partial downloads are the most common cause.</li>
+                            <li>Check for executable permission:
+                                <code>chmod +x ProductivityTracker-x86_64.AppImage</code></li>
+                        </ul>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4>GitHub sync fails on exit</h4>
+                        <ul>
+                            <li>Verify your token has <code>repo</code> scope.</li>
+                            <li>Check that the repository URL is correct and accessible.</li>
+                            <li>Look for error messages in the terminal if running from source.</li>
+                        </ul>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4>"libxcb-cursor0 not found" on launch</h4>
+                        <ul>
+                            <li>Install the package: <code>sudo apt install libxcb-cursor0</code></li>
+                            <li>On Fedora: <code>sudo dnf install xcb-util-cursor</code></li>
+                        </ul>
+                    </div>
+                </article>
+
+                <!-- ─── FAQ ─── -->
+                <article class="guide-section" id="faq">
+                    <h2><i class="fas fa-question-circle"></i> FAQ</h2>
+
+                    <div class="faq-item">
+                        <h4>Is my webcam video recorded or stored?</h4>
+                        <p><strong>No.</strong> Frames are processed in real-time for face detection only. No images,
+                            videos, or screenshots are ever saved to disk or sent anywhere.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4>Where is my data stored?</h4>
+                        <p>The app follows the XDG Base Directory Specification:</p>
+                        <ul>
+                            <li>Config: <code>~/.config/productivity-tracker/</code></li>
+                            <li>Data: <code>~/.local/share/productivity-tracker/</code></li>
+                            <li>Cache: <code>~/.cache/productivity-tracker/</code></li>
+                        </ul>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4>Can I use this without a webcam?</h4>
+                        <p>Yes. The timer won't auto-start/stop, but you can still use the TODO manager, dataset
+                            viewer, and GitHub sync features.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4>Does it work on macOS or Windows?</h4>
+                        <p>Currently, the app is Linux-only. The input tracking layer uses Linux-specific APIs
+                            (evdev for Wayland). X11 mode may work on macOS/Windows with modifications, but it's not
+                            tested or supported.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4>How do I uninstall?</h4>
+                        <p><strong>AppImage:</strong> Just delete the <code>.AppImage</code> file.<br>
+                            <strong>DEB:</strong> <code>sudo apt remove productivity-tracker</code><br>
+                            <strong>Data:</strong> Remove <code>~/.config/productivity-tracker/</code> and
+                            <code>~/.local/share/productivity-tracker/</code>
+                        </p>
+                    </div>
+                </article>
+
+            </main>
+        </div>
+    </section>
+
+    <!-- ─── Footer ─── -->
+    <footer>
+        <div class="container footer-inner">
+            <div class="footer-brand">
+                <img src="assets/images/icon.svg" alt="Logo" width="28" height="28">
+                <span>Productivity Tracker</span>
+            </div>
+            <div class="footer-links">
+                <a href="index.html">Home</a>
+                <a href="https://github.com/rahul713rk/Productivity_tracker">GitHub</a>
+                <a href="https://github.com/rahul713rk/Productivity_tracker/releases">Releases</a>
+                <a href="https://github.com/rahul713rk/Productivity_tracker/issues">Issues</a>
+            </div>
+            <p class="footer-copy">&copy; 2026 Productivity Tracker. Created by <a
+                    href="https://github.com/rahul713rk">Rahul</a>. MIT Licensed.</p>
+        </div>
+    </footer>
+
+    <script src="js/script.js" defer></script>
+    <script>
+        function copyCode(btn) {
+            const code = btn.closest('.code-block').querySelector('code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied';
+                setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i> Copy', 2000);
+            });
+        }
+    </script>
+</body>
+
+</html>
