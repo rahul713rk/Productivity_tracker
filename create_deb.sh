@@ -17,9 +17,7 @@ fi
 
 echo "Setting up DEB package structure..."
 # Clean previous build attempt
-if [ -d "$DEB_ROOT" ]; then
-    rm -rf "$DEB_ROOT"
-fi
+rm -rf "$DEB_ROOT"
 
 # Create directory structure
 mkdir -p "$DEB_ROOT/DEBIAN"
@@ -44,17 +42,8 @@ chmod 755 "$DEB_ROOT/usr/bin/$APP_NAME"
 echo "Setting up desktop integration..."
 cp "assets/images/icon.svg" "$DEB_ROOT/usr/share/icons/hicolor/scalable/apps/$APP_NAME.svg"
 
-# Create the .desktop file
-cat <<EOF > "$DEB_ROOT/usr/share/applications/$APP_NAME.desktop"
-[Desktop Entry]
-Name=Productivity Tracker
-Exec=$APP_NAME
-Icon=$APP_NAME
-Type=Application
-Categories=Utility;
-Comment=Track your productivity with face detection and global input tracking.
-Terminal=false
-EOF
+# Use the existing project desktop file
+cp "productivity_tracker.desktop" "$DEB_ROOT/usr/share/applications/$APP_NAME.desktop"
 chmod 644 "$DEB_ROOT/usr/share/applications/$APP_NAME.desktop"
 
 # 5. Create Control File
@@ -69,7 +58,7 @@ Section: utils
 Priority: optional
 Architecture: $ARCH
 Maintainer: Rahul <rahul@example.com>
-Depends: libgl1, libxcb-cursor0
+Depends: libgl1, libxcb-cursor0, libxcb-xinerama0, libxcb-icccm4, libxcb-image0, libxcb-keysyms1, libxcb-render-util0, libxcb-shape0, libxcb-xfixes0, libxkbcommon-x11-0, libwayland-client0, libwayland-cursor0
 Installed-Size: $SIZE
 Description: Productivity Tracker
  A productivity tracker that monitors camera feed for face detection 
@@ -81,5 +70,9 @@ EOF
 # 6. Build the .deb package
 echo "Building .deb package..."
 dpkg-deb --build "$DEB_ROOT" "${APP_NAME}_${VERSION}_${ARCH}.deb"
+if [ $? -ne 0 ]; then
+    echo "Debian package creation failed."
+    exit 1
+fi
 
 echo "Done! Final DEB package created: ${APP_NAME}_${VERSION}_${ARCH}.deb"

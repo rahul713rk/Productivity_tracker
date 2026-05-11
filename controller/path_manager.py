@@ -107,8 +107,10 @@ class PathManager:
         )
         self.logger = logging.getLogger("ProductivityTracker")
         self.logger.info(f"Initialized PathManager.")
-        self.logger.info(f"App Dir (Read-only): {self.app_dir}")
-        self.logger.info(f"User Data Dir (Writable): {self.user_data_dir}")
+        self.logger.info(f"App Directory (read-only assets): {self.app_dir}")
+        self.logger.info(f"User Data Directory (writable): {self.user_data_dir}")
+        self.logger.info(f"Config Directory (writable): {self.user_config_dir}")
+        self.logger.info(f"Log File: {self.log_file}")
 
     def get_path(self, path_type):
         paths = {

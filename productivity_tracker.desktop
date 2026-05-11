@@ -1,7 +1,8 @@
 [Desktop Entry]
 Name=Productivity Tracker
-Exec=productivity_tracker
-Icon=icon
+Exec=productivity-tracker
+Icon=productivity-tracker
 Type=Application
 Categories=Utility;
 Comment=Track your productivity with face detection and global input tracking.
+Terminal=false

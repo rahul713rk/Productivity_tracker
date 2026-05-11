@@ -3,7 +3,8 @@
 # Script to create a true AppImage from Nuitka standalone build
 
 APP_NAME="ProductivityTracker"
-LOWER_NAME="productivity_tracker"
+LOWER_NAME="productivity-tracker"
+BINARY_NAME="productivity_tracker"
 BUILD_DIR="build/main.dist"
 APPDIR="build/AppDir"
 
@@ -22,17 +23,20 @@ mkdir -p "$APPDIR/usr/share/icons/hicolor/scalable/apps"
 cp -r "$BUILD_DIR/"* "$APPDIR/usr/bin/"
 
 # 3. Add Desktop file and Icons
-cp "$LOWER_NAME.desktop" "$APPDIR/$LOWER_NAME.desktop"
+# Ensure the desktop file name matches the icon and executable if needed
+cp "productivity_tracker.desktop" "$APPDIR/$LOWER_NAME.desktop"
 cp "assets/images/icon.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/$LOWER_NAME.svg"
-cp "assets/images/icon.svg" "$APPDIR/icon.svg" # Matches Icon=icon in desktop file
+cp "assets/images/icon.svg" "$APPDIR/$LOWER_NAME.svg"
+ln -s "$LOWER_NAME.svg" "$APPDIR/.DirIcon"
 
-# 4. Create AppRun symlink
+# 4. Create AppRun script
 cat <<EOF > "$APPDIR/AppRun"
 #!/bin/bash
 HERE="\$(dirname "\$(readlink -f "\${0}")")"
 export PATH="\$HERE/usr/bin:\$PATH"
+# Run the binary from its directory so it can find its assets
 cd "\$HERE/usr/bin"
-exec ./$LOWER_NAME "\$@"
+exec ./${BINARY_NAME} "\$@"
 EOF
 chmod +x "$APPDIR/AppRun"
 
@@ -49,12 +53,22 @@ fi
 
 # 6. Build the AppImage
 echo "Building AppImage..."
-if [ ! -f "appimagetool" ]; then
-    echo "appimagetool found empty or missing."
+export ARCH=x86_64
+
+# In Docker or some environments, FUSE might not be available.
+# We try to use --appimage-extract-and-run, and if that fails, we try extracting manually.
+if [ -n "$DOCKER_BUILD" ] || ! ./appimagetool --version >/dev/null 2>&1; then
+    echo "FUSE not available or in Docker, extracting appimagetool..."
+    ./appimagetool --appimage-extract >/dev/null
+    ./squashfs-root/AppRun "$APPDIR" "${APP_NAME}-x86_64.AppImage"
+    rm -rf squashfs-root
+else
+    ./appimagetool "$APPDIR" "${APP_NAME}-x86_64.AppImage"
+fi
+
+if [ $? -ne 0 ]; then
+    echo "AppImage creation failed."
     exit 1
 fi
-export ARCH=x86_64
-# Use --appimage-extract-and-run to avoid libfuse2 issues
-./appimagetool --appimage-extract-and-run "$APPDIR" "${APP_NAME}-x86_64.AppImage"
 
 echo "Done! Final AppImage created: ${APP_NAME}-x86_64.AppImage"

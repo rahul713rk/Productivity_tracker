@@ -2,19 +2,33 @@
 
 # Productivity Tracker Nuitka Build Script
 
-# Ensure virtual environment exists
-if [ ! -d "venv" ]; then
-    echo "Virtual environment 'venv' not found. Please create it first."
+# Ensure virtual environment exists (skip if running in Docker where we pre-install deps)
+if [ ! -d "venv" ] && [ -z "$DOCKER_BUILD" ]; then
+    echo "Virtual environment 'venv' not found. Please create it first or run via docker_build.sh."
     exit 1
 fi
 
-# Run Nuitka compilation using the venv
-./venv/bin/python3 -m nuitka \
+PYTHON_EXE="./venv/bin/python3"
+if [ ! -f "$PYTHON_EXE" ]; then
+    PYTHON_EXE="python3"
+fi
+
+# Clean previous build to avoid stale artifacts
+echo "Cleaning build directory..."
+rm -rf build/
+
+# Run Nuitka compilation
+$PYTHON_EXE -m nuitka \
     --standalone \
     --enable-plugin=pyside6 \
     --include-package=controller \
     --include-package=model \
     --include-package=view \
+    --include-package=plotly \
+    --include-package=pandas \
+    --include-package=numpy \
+    --include-package=mediapipe \
+    --include-package-data=mediapipe \
     --follow-imports \
     --output-dir=build \
     --output-filename=productivity_tracker \

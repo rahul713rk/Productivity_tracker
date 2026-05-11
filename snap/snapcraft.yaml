@@ -40,3 +40,5 @@ parts:
       - libxcb-shape0
       - libxcb-xfixes0
       - libxkbcommon-x11-0
+      - libwayland-client0
+      - libwayland-cursor0
