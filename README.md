@@ -139,7 +139,7 @@ The project is optimized for Linux distribution using **Nuitka**.
 ```bash
 bash nuitka_build.sh
 ```
-This creates a portable folder in `build/main.dist/`.
+This creates a portable folder in `output/main.dist/`.
 
 ### Create an AppImage
 ```bash

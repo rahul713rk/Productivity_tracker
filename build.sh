@@ -45,5 +45,7 @@ else
 fi
 
 echo "--- All build tasks completed ---"
+echo "Build artifacts can be found in the 'output' directory."
 # List packages safely without failing the script if some types are missing
 ls -lh *.AppImage *.deb *.snap 2>/dev/null || true
+ls -R output/main.dist 2>/dev/null | head -n 20 || true

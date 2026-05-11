@@ -13,9 +13,9 @@ if [ ! -f "$PYTHON_EXE" ]; then
     PYTHON_EXE="python3"
 fi
 
-# Clean previous build to avoid stale artifacts
-echo "Cleaning build directory..."
-rm -rf build/
+# Clean previous output to avoid stale artifacts
+echo "Cleaning output directory..."
+rm -rf output/
 
 # Run Nuitka compilation
 $PYTHON_EXE -m nuitka \
@@ -27,20 +27,19 @@ $PYTHON_EXE -m nuitka \
     --include-package=mediapipe \
     --include-package-data=mediapipe \
     --follow-imports \
-    --output-dir=build \
+    --output-dir=output \
     --output-filename=productivity_tracker \
     --linux-icon=assets/images/icon.svg \
     main.py
 
-# Copy assets to build directory if compilation succeeded
+# Copy assets to output directory if compilation succeeded
 if [ $? -eq 0 ]; then
     echo "Compilation successful. Copying assets..."
-    # The build directory is usually build/main.dist/
-    # We want to place assets inside that directory
-    mkdir -p build/main.dist/assets
-    cp -r assets/* build/main.dist/assets/
-    echo "Build complete! You can find the app in build/main.dist/"
-    echo "To run: ./build/main.dist/productivity_tracker"
+    # The output directory is output/main.dist/
+    mkdir -p output/main.dist/assets
+    cp -r assets/* output/main.dist/assets/
+    echo "Build complete! You can find the app in output/main.dist/"
+    echo "To run: ./output/main.dist/productivity_tracker"
 else
     echo "Compilation failed."
 fi

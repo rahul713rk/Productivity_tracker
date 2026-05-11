@@ -5,8 +5,8 @@
 APP_NAME="productivity-tracker"
 VERSION="1.0"
 ARCH="amd64"
-BUILD_DIR="build/main.dist"
-DEB_ROOT="build/deb_package"
+BUILD_DIR="output/main.dist"
+DEB_ROOT="output/deb_package"
 INSTALL_LOCATION="/opt/$APP_NAME"
 
 # 1. Ensure the Nuitka build exists

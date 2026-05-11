@@ -5,8 +5,8 @@
 APP_NAME="ProductivityTracker"
 LOWER_NAME="productivity-tracker"
 BINARY_NAME="productivity_tracker"
-BUILD_DIR="build/main.dist"
-APPDIR="build/AppDir"
+BUILD_DIR="output/main.dist"
+APPDIR="output/AppDir"
 
 # 1. Ensure the Nuitka build exists
 if [ ! -d "$BUILD_DIR" ]; then

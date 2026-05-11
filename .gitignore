@@ -20,6 +20,8 @@ venv.bak/
 
 # Distribution / packaging
 .Python
+output/
+*.build
 build/
 develop-eggs/
 dist/
@@ -106,3 +108,4 @@ assets/resource/Daily_Update/*.md
 snap/local/
 *.snap
 *.deb
+snap/
