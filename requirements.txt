@@ -5,5 +5,4 @@ numpy
 pynput
 evdev
 pandas
-plotly
 nuitka

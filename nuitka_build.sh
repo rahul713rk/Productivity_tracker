@@ -24,9 +24,6 @@ $PYTHON_EXE -m nuitka \
     --include-package=controller \
     --include-package=model \
     --include-package=view \
-    --include-package=plotly \
-    --include-package=pandas \
-    --include-package=numpy \
     --include-package=mediapipe \
     --include-package-data=mediapipe \
     --follow-imports \
