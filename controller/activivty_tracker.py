@@ -65,10 +65,18 @@ def on_click(x, y, button, pressed):
 
 def evdev_worker(device_path, dev_type):
     """Handles global events for evdev (Wayland)."""
-    global key_count, click_count
+    global key_count, click_count, tracking_active
     try:
         device = InputDevice(device_path)
+        # We use a non-blocking read or a small timeout to check the flag
+        # But read_loop is blocking. Better to use select or just check periodically.
+        # Minimal change: check 'tracking_active' inside the loop
         for event in device.read_loop():
+            if not tracking_active:
+                logger.info(f"Stopping evdev listener for {device_path}")
+                device.close()
+                break
+            
             if stopwatch_instance and getattr(stopwatch_instance, "running", False):
                 if event.type == ecodes.EV_KEY and event.value == 1: # Key down
                     if dev_type == 'kbd':
@@ -81,8 +89,9 @@ def evdev_worker(device_path, dev_type):
 
 def start_tracking(stopwatch):
     """Start global listeners for keyboard and mouse events."""
-    global keyboard_listener, mouse_listener, stopwatch_instance, evdev_threads
+    global keyboard_listener, mouse_listener, stopwatch_instance, evdev_threads, tracking_active
     stopwatch_instance = stopwatch
+    tracking_active = True
 
     session_type = os.environ.get('XDG_SESSION_TYPE', '').lower()
     

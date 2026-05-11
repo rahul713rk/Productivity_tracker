@@ -11,6 +11,9 @@ from controller.activivty_tracker import start_tracking  , stop_tracking
 from model.database import Database
 from model.markdown import MarkdownHandler
 
+import threading
+from PySide6.QtCore import QTimer
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -41,6 +44,11 @@ class MainWindow(QMainWindow):
 
         # Check for Wayland permissions
         self.check_wayland_permissions()
+
+        # Initialize Auto-save timer (5 minutes)
+        self.autosave_timer = QTimer(self)
+        self.autosave_timer.timeout.connect(self.process)
+        self.autosave_timer.start(600000) # 600,000 ms = 10 minutes
     
     def check_wayland_permissions(self):
         import os
@@ -68,7 +76,8 @@ class MainWindow(QMainWindow):
                     QMessageBox.critical(
                         self,
                         "Error",
-                        "Failed to fix permissions. Please run the command manually."
+                        "Failed to fix permissions. Please run the command manually: \n"
+                        "sudo usermod -aG input $USER"
                     )
     
 
@@ -94,7 +103,9 @@ class MainWindow(QMainWindow):
         self.StopwatchView.camera_model.stop_camera()
         self.TodoView.helper.close()
         stop_tracking()
-        self.GitView.controller.commit_and_push()
+        
+        # Best solution: Use a thread for Git operations to avoid UI hang
+        threading.Thread(target=self.GitView.controller.commit_and_push, daemon=True).start()
     
     def closeEvent(self, event):
         reply = QMessageBox.question(

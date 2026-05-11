@@ -27,6 +27,12 @@ class GitHandler:
             "token": ""
         }
 
+        if not os.path.exists(self.config_path):
+            logger.info("Config file missing, using defaults")
+            for key, value in default_config.items():
+                setattr(self, key, value)
+            return
+
         try:
             with open(self.config_path, 'r') as f:
                 config = json.load(f)
@@ -39,8 +45,8 @@ class GitHandler:
                 logger.info("Git Configuration Data Loaded from json file")
                 self.data = True
 
-        except Exception as e:
-            QMessageBox.critical(None, "Error", f"Failed to load configuration: {str(e)}")
+        except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"Could not load git config, using defaults: {e}")
             for key, value in default_config.items():
                 setattr(self, key, value)
 

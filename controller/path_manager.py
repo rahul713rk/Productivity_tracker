@@ -18,39 +18,77 @@ class PathManager:
         return cls._instance
     
     def _initialize(self):
-        # 1. Determine the base directory
-        # If running as a standalone app (e.g., from Nuitka)
+        # 1. Determine the Base Directories
+        
+        # A. Static App Directory (Read-only assets)
         if getattr(sys, 'frozen', False):
             # For Nuitka/PyInstaller, the executable location
             self.app_dir = Path(sys.executable).parent
         else:
-            # For development, the current script's parent's parent (assuming it's in controller/)
+            # For development, the current script's parent's parent
             self.app_dir = Path(__file__).parent.parent.absolute()
 
-        # 2. Define Assets Directory
-        # The user wants "assets" directory structure to be preserved outside the binary
+        # B. User Data Directory (Writable configs, DB, Logs)
+        # Use XDG_DATA_HOME if available, else fallback to ~/.local/share/
+        data_home = os.environ.get('XDG_DATA_HOME')
+        if data_home:
+            self.user_data_dir = Path(data_home) / "productivity-tracker"
+        else:
+            self.user_data_dir = Path.home() / ".local" / "share" / "productivity-tracker"
+        
+        # 2. Define Assets Directory (Read-only)
         self.assets_dir = self.app_dir / "assets"
-        
-        # Ensure directories exist
-        self.resource_dir = self.assets_dir / "resource"
-        self.data_dir = self.resource_dir / "data"
-        self.update_dir = self.resource_dir / "Daily_Update"
-        self.logs_dir = self.assets_dir / "logs"
         self.images_dir = self.assets_dir / "images"
+        self.face_model_path = self.assets_dir / "blaze_face_short_range.tflite"
+
+        # 3. Define Resource Directories (Writable)
+        # We migrate these to user_data_dir to avoid PermissionErrors in /opt/
+        self.writable_resource_dir = self.user_data_dir / "resource"
+        self.data_dir = self.writable_resource_dir / "data"
+        self.update_dir = self.writable_resource_dir / "Daily_Update"
+        self.logs_dir = self.user_data_dir / "logs"
         
-        for d in [self.assets_dir, self.resource_dir, self.data_dir, self.update_dir, self.logs_dir, self.images_dir]:
-            d.mkdir(parents=True, exist_ok=True)
+        # Ensure writable directories exist
+        for d in [self.user_data_dir, self.writable_resource_dir, self.data_dir, self.update_dir, self.logs_dir]:
+            try:
+                d.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                # If we can't create the directory, we might be in trouble
+                # We'll print to stderr as a last resort
+                print(f"CRITICAL: Failed to create directory {d}: {e}", file=sys.stderr)
             
-        # 3. Specific File Paths
+        # 4. Specific File Paths
         self.db_path = self.data_dir / "main.db"
         self.git_config_path = self.data_dir / "git_config.json"
         self.markdown_path = self.update_dir / "README.md"
-        self.face_model_path = self.assets_dir / "blaze_face_short_range.tflite"
         self.log_file = self.logs_dir / "app.log"
         self.graph_html = self.data_dir / "graph.html"
         
-        # 4. Setup Logging
+        # 5. Setup Logging
         self._setup_logging()
+
+        # 6. Ensure critical files exist with default content
+        self._create_default_files()
+
+    def _create_default_files(self):
+        """Creates default files if they don't exist to prevent IOErrors."""
+        import json
+        
+        # Default Git Config
+        if not self.git_config_path.exists():
+            default_git = {
+                "username": "",
+                "email": "",
+                "repo_name": "",
+                "token": ""
+            }
+            try:
+                with open(self.git_config_path, 'w') as f:
+                    json.dump(default_git, f, indent=4)
+                self.logger.info(f"Created default git config at {self.git_config_path}")
+            except Exception as e:
+                # We use print here because logging might not be fully initialized or we want to avoid recursion
+                print(f"Error creating default git config: {e}")
 
     def _setup_logging(self):
         logging.basicConfig(
@@ -62,7 +100,9 @@ class PathManager:
             ]
         )
         self.logger = logging.getLogger("ProductivityTracker")
-        self.logger.info(f"Initialized PathManager. App Dir: {self.app_dir}")
+        self.logger.info(f"Initialized PathManager.")
+        self.logger.info(f"App Dir (Read-only): {self.app_dir}")
+        self.logger.info(f"User Data Dir (Writable): {self.user_data_dir}")
 
     def get_path(self, path_type):
         paths = {
