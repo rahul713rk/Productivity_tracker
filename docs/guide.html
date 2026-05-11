@@ -124,11 +124,27 @@ chmod +x ProductivityTracker-x86_64.AppImage
                         <pre><code># Download the DEB package
 wget https://github.com/rahul713rk/Productivity_tracker/releases/download/v1.1/productivity-tracker_1.1_amd64.deb
 
-# Install
-sudo dpkg -i productivity-tracker_1.1_amd64.deb
+# Method 1: APT (Recommended - handles dependencies)
+sudo apt install ./productivity-tracker_1.1_amd64.deb
 
-# Fix any missing dependencies
-sudo apt-get install -f</code></pre>
+# Method 2: DPKG (Traditional)
+# sudo dpkg -i productivity-tracker_1.1_amd64.deb
+# sudo apt-get install -f  # Fix any missing dependencies</code></pre>
+                    </div>
+
+                    <h3>Uninstallation</h3>
+                    <p>To remove Productivity Tracker from your system:</p>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" onclick="copyCode(this)"><i class="fas fa-copy"></i> Copy</button>
+                        </div>
+                        <pre><code># Remove the application
+sudo apt remove productivity-tracker
+
+# Optional: Remove configuration and local data
+rm -rf ~/.config/productivity-tracker/
+rm -rf ~/.local/share/productivity-tracker/</code></pre>
                     </div>
 
                     <h3>Option C — Build from Source</h3>
